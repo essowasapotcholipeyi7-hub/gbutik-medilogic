@@ -11,10 +11,9 @@ import os
 import json
 
 # ========== CONFIGURATION EMAIL ==========
-# Remplace par tes infos perso
-EMAIL_EXPEDITEUR = "essowasainfo60@gmail.com"  # Ton adresse Gmail
-EMAIL_MDP = "ndjocscwtvgwyfhs"  # Mot de passe d'application Gmail
-EMAIL_DESTINATAIRE = "essowasainfo60@gmail.com"  # Où tu veux recevoir les notifs (ton email)
+EMAIL_EXPEDITEUR = os.environ.get('EMAIL_EXPEDITEUR', '')
+EMAIL_MDP = os.environ.get('EMAIL_PASSWORD', '')
+EMAIL_DESTINATAIRE = os.environ.get('EMAIL_DESTINATAIRE', '')
 
 app = Flask(__name__)
 app.secret_key = 'gbutik_multi_secret_2024'
@@ -651,11 +650,26 @@ def api_get_historique_ventes():
     if 'boutique_id' not in session:
         return jsonify([])
     
-    sheet = get_sheet(session['boutique_id'], 'ventes')
-    if not sheet:
+    boutique_id = session['boutique_id']
+    
+    # Lire les ventes
+    ventes_sheet = get_sheet(boutique_id, 'ventes')
+    if not ventes_sheet:
         return jsonify([])
     
-    data = sheet.get_all_values()
+    # Lire le catalogue pour avoir les prix unitaires (colonne E)
+    catalogue_sheet = get_sheet(boutique_id, 'catalogue')
+    prix_catalogue = {}
+    if catalogue_sheet:
+        cat_data = catalogue_sheet.get_all_values()
+        for i in range(1, len(cat_data)):
+            row = cat_data[i]
+            if len(row) > 4:
+                produit_nom = row[1] if len(row) > 1 else ''
+                prix_vente = float(row[4]) if row[4] else 0
+                prix_catalogue[produit_nom] = prix_vente
+    
+    data = ventes_sheet.get_all_values()
     ventes = []
     
     for i in range(1, len(data)):
@@ -667,7 +681,6 @@ def api_get_historique_ventes():
             continue
         
         # Vérifier si la vente est annulée (colonne J = index 9)
-        # Si la colonne n'existe pas, row[9] renvoie None ou IndexError
         est_annulee = False
         try:
             if len(row) > 9 and row[9] == '1':
@@ -676,15 +689,21 @@ def api_get_historique_ventes():
             est_annulee = False
         
         if est_annulee:
-            continue  # On ignore les ventes annulées
+            continue
         
         try:
+            produit_nom = str(row[3]) if len(row) > 3 else ''
+            
+            # Prix unitaire depuis le catalogue (colonne E)
+            prix_unitaire = prix_catalogue.get(produit_nom, 0)
+            
             ventes.append({
                 'id': str(row[0]),
                 'date': str(row[1]) if len(row) > 1 else '',
                 'heure': str(row[2]) if len(row) > 2 else '',
-                'produit': str(row[3]) if len(row) > 3 else '',
+                'produit': produit_nom,
                 'quantite': int(float(row[4])) if len(row) > 4 and row[4] else 0,
+                'prix_unitaire': prix_unitaire,  # ← NOUVEAU : prix conseillé du catalogue
                 'prix_vendu': float(row[5]) if len(row) > 5 and row[5] else 0,
                 'total': float(row[7]) if len(row) > 7 and row[7] else 0,
                 'vendeur': str(row[8]) if len(row) > 8 else ''
@@ -1319,7 +1338,7 @@ def api_connexion_vendeur():
 # ========== ADMIN GLOBAL (RESERVE AU CONCEPTEUR) ==========
 
 # Mot de passe admin global (change-le)
-ADMIN_GLOBAL_PASSWORD = "essowasa1234A"  # À changer !
+ADMIN_GLOBAL_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 @app.route('/admin_global')
 def admin_global():
