@@ -1,0 +1,796 @@
+<div class="card">
+    <h2>💰 Vente - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <div id="venteMessage" style="display:none;"></div>
+    
+    <!-- Mode Vente -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button id="btnModeUnique" onclick="changerMode('unique')" style="flex:1; padding:12px; background:#1e3a8a; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">🛒 Vente unique</button>
+        <button id="btnModeMultiple" onclick="changerMode('multiple')" style="flex:1; padding:12px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">🛍️ Vente multiple (Panier)</button>
+    </div>
+    
+    <!-- ========== MODE VENTE UNIQUE ========== -->
+    <div id="modeUnique">
+        <!-- Barre de recherche -->
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="searchProduitUnique" placeholder="🔍 Rechercher un produit..." 
+                   style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" 
+                   onkeyup="filtrerProduitsUnique()">
+        </div>
+        
+        <div class="form-group">
+            <label>📦 Produit</label>
+            <select id="produitSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateProduitInfo()">
+                <option value="">Sélectionnez un produit</option>
+            </select>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+            <div class="form-group">
+                <label>🔢 Quantité</label>
+                <input type="number" id="quantite" value="1" min="1" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="form-group">
+                <label>💰 Prix vendu (FCFA)</label>
+                <input type="number" id="prixVendu" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📊 Stock restant</label>
+            <input type="text" id="stockDispo" readonly style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
+        </div>
+        
+        <div class="form-group">
+            <label>🎁 Remise (FCFA)</label>
+            <input type="number" id="remise" value="0" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <h3>Total à payer</h3>
+            <div style="font-size: 32px; font-weight: bold;" id="total">0 FCFA</div>
+        </div>
+        
+        <button onclick="validerVente()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+            ✅ Valider la vente
+        </button>
+    </div>
+    
+    <!-- ========== MODE VENTE MULTIPLE (PANIER) ========== -->
+    <div id="modeMultiple" style="display:none;">
+        <!-- Barre de recherche -->
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="searchProduitPanier" placeholder="🔍 Rechercher un produit..." 
+                   style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" 
+                   onkeyup="filtrerProduitsPanier()">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: end;">
+            <div class="form-group">
+                <label>📦 Produit</label>
+                <select id="produitPanier" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateProduitPanierInfo()">
+                    <option value="">Sélectionnez un produit</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>🔢 Quantité</label>
+                <input type="number" id="quantitePanier" value="1" min="1" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="form-group">
+                <label>💰 Prix vendu (FCFA)</label>
+                <input type="number" id="prixPanier" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" placeholder="Prix">
+            </div>
+            <div>
+                <button onclick="ajouterAuPanier()" style="width:100%; background:#17a2b8; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">➕ Ajouter</button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📊 Stock restant</label>
+            <input type="text" id="stockDispoPanier" readonly style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
+        </div>
+        
+        <!-- Liste du panier -->
+        <div style="margin-top: 20px; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
+            <div style="background: #1e3a8a; color: white; padding: 12px; display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 0.5fr; font-weight: bold;">
+                <span>Produit</span><span>Qté</span><span>Prix</span><span>Total</span><span></span>
+            </div>
+            <div id="panierList" style="max-height: 250px; overflow-y: auto;">
+                <div style="padding: 20px; text-align: center; color: #999;">Panier vide</div>
+            </div>
+        </div>
+        
+        <!-- Total panier -->
+        <div style="background: #f0f0f0; padding: 15px; border-radius: 12px; margin: 15px 0; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold;">Total du panier</div>
+            <div style="font-size: 28px; font-weight: bold; color: #1e3a8a;" id="totalPanier">0 FCFA</div>
+        </div>
+        
+        <div class="form-group">
+            <label>🎁 Remise globale (FCFA)</label>
+            <input type="number" id="remiseGlobale" value="0" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" oninput="calculerTotalPanier()">
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <h3>Total après remise</h3>
+            <div style="font-size: 32px; font-weight: bold;" id="totalApresRemise">0 FCFA</div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="validerPanier()" style="flex:2; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+                ✅ Valider tout le panier
+            </button>
+            <button onclick="viderPanier()" style="flex:1; background:#dc3545; color:white; border:none; border-radius:8px; padding:14px; cursor:pointer;">
+                🗑️ Vider
+            </button>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{% if user_role == 'vendeur' %}/dashboard_vendeur{% else %}/dashboard_boutique{% endif %}" style="background:#6c757d; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; display:inline-block;">
+            ← Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<!-- MODAL REÇU -->
+<div id="modalRecu" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div class="recu-container">
+        <div class="recu">
+            <div class="recu-header">
+                <h2>🏪 {{ session.boutique_nom if session.boutique_nom else 'GBoutik-MediLogic' }}</h2>
+                <p>N° Ticket: <span id="recuNumero">---</span></p>
+                <p>Date: <span id="recuDate">---</span></p>
+                <p>Heure: <span id="recuHeure">---</span></p>
+                <p>Vendeur: <span id="recuVendeur">---</span></p>
+            </div>
+            <div class="recu-body">
+                <table class="recu-table">
+                    <thead>
+                        <tr><th>Article</th><th>Qté</th><th>Prix</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="recuArticles">
+                        <tr><td colspan="4">Chargement...</td><tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="recu-total"><td colspan="3"><strong>Total brut</strong></td><td id="recuTotalBrut">0 FCFA</td></tr>
+                        <tr class="recu-remise"><td colspan="3">Remise</td><td id="recuRemise">0 FCFA</td></tr>
+                        <tr class="recu-grand-total"><td colspan="3"><strong>TOTAL À PAYER</strong></td><td id="recuTotal">0 FCFA</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="recu-footer">
+                <p>Merci de votre visite !</p>
+                <p>💰 Retour satisfait ou remboursé</p>
+            </div>
+            <div class="recu-buttons">
+                <button class="btn-print" onclick="imprimerRecu()">🖨️ Imprimer</button>
+                <button class="btn-close" onclick="fermerRecu()">❌ Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 14px; }
+    input, select { font-size: 14px; }
+    .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin-bottom: 20px; text-align: center; }
+    #venteMessage { background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745; }
+    .panier-item { padding: 10px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 0.5fr; align-items: center; }
+    .panier-item:hover { background: #f5f5f5; }
+    .btn-remove { background: #dc3545; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+    #searchProduitUnique, #searchProduitPanier { transition: all 0.3s; }
+    #searchProduitUnique:focus, #searchProduitPanier:focus { border-color: #1e3a8a; outline: none; box-shadow: 0 0 0 2px rgba(30,58,138,0.2); }
+    .stock-suffisant { color: #28a745; font-weight: normal; }
+    .stock-insuffisant { color: #dc3545; font-weight: bold; }
+
+    /* Styles pour le reçu */
+.recu-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+.recu {
+    background: white;
+    width: 380px;
+    max-width: 90%;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.recu-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+.recu-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+}
+.recu-header p {
+    margin: 5px 0;
+    font-size: 12px;
+    opacity: 0.9;
+}
+.recu-body {
+    padding: 20px;
+}
+.recu-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.recu-table th {
+    background: #f0f0f0;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.recu-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+}
+.recu-total td, .recu-remise td {
+    padding-top: 10px;
+}
+.recu-grand-total td {
+    padding-top: 10px;
+    border-top: 2px solid #1e3a8a;
+    font-size: 16px;
+}
+.recu-footer {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+}
+.recu-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+.recu-buttons button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-print {
+    background: #1e3a8a;
+    color: white;
+}
+.btn-close {
+    background: #6c757d;
+    color: white;
+}
+@media print {
+    .recu-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+    }
+    .recu-buttons {
+        display: none;
+    }
+    .btn-print, .btn-close {
+        display: none;
+    }
+}
+</style>
+
+<script>
+    let tousProduits = [];
+    let produitsFiltresUnique = [];
+    let produitsFiltresPanier = [];
+    let panier = [];
+    let mode = 'unique';
+    
+    function chargerProduits() {
+        fetch('/api/get_produits')
+            .then(response => response.json())
+            .then(data => {
+                tousProduits = data;
+                produitsFiltresUnique = [...data];
+                produitsFiltresPanier = [...data];
+                mettreAJourListes();
+            });
+    }
+    
+    function mettreAJourListes() {
+        var select = document.getElementById('produitSelect');
+        var selectPanier = document.getElementById('produitPanier');
+        select.innerHTML = '<option value="">Sélectionnez un produit</option>';
+        selectPanier.innerHTML = '<option value="">Sélectionnez un produit</option>';
+        
+        produitsFiltresUnique.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.nom;
+            opt.textContent = p.nom + ' (Stock: ' + p.stock + ')';
+            select.appendChild(opt);
+        });
+        
+        produitsFiltresPanier.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.nom;
+            opt.textContent = p.nom + ' (Stock: ' + p.stock + ')';
+            selectPanier.appendChild(opt);
+        });
+    }
+    
+    function filtrerProduitsUnique() {
+        var searchTerm = document.getElementById('searchProduitUnique').value.toLowerCase();
+        if (!searchTerm) {
+            produitsFiltresUnique = [...tousProduits];
+        } else {
+            produitsFiltresUnique = tousProduits.filter(p => 
+                p.nom && p.nom.toLowerCase().includes(searchTerm)
+            );
+        }
+        mettreAJourListes();
+    }
+    
+    function filtrerProduitsPanier() {
+        var searchTerm = document.getElementById('searchProduitPanier').value.toLowerCase();
+        if (!searchTerm) {
+            produitsFiltresPanier = [...tousProduits];
+        } else {
+            produitsFiltresPanier = tousProduits.filter(p => 
+                p.nom && p.nom.toLowerCase().includes(searchTerm)
+            );
+        }
+        mettreAJourListes();
+    }
+    
+    function updateProduitInfo() {
+        var produit = document.getElementById('produitSelect').value;
+        var p = tousProduits.find(x => x.nom === produit);
+        if (p) {
+            document.getElementById('prixVendu').value = p.prixVente;
+            var qte = parseInt(document.getElementById('quantite').value) || 1;
+            var stockRestant = p.stock;
+            document.getElementById('stockDispo').value = stockRestant + ' unités';
+            
+            if (qte > stockRestant) {
+                document.getElementById('stockDispo').className = 'stock-insuffisant';
+                document.getElementById('stockDispo').value = stockRestant + ' unités (⚠️ Stock insuffisant!)';
+            } else {
+                document.getElementById('stockDispo').className = 'stock-suffisant';
+            }
+        } else {
+            document.getElementById('prixVendu').value = '';
+            document.getElementById('stockDispo').value = '';
+        }
+        calculerTotal();
+    }
+    
+    function updateProduitPanierInfo() {
+        var produit = document.getElementById('produitPanier').value;
+        var p = tousProduits.find(x => x.nom === produit);
+        if (p) {
+            document.getElementById('prixPanier').value = p.prixVente;
+            var qte = parseInt(document.getElementById('quantitePanier').value) || 1;
+            var stockRestant = p.stock;
+            document.getElementById('stockDispoPanier').value = stockRestant + ' unités';
+            
+            if (qte > stockRestant) {
+                document.getElementById('stockDispoPanier').className = 'stock-insuffisant';
+                document.getElementById('stockDispoPanier').value = stockRestant + ' unités (⚠️ Stock insuffisant!)';
+            } else {
+                document.getElementById('stockDispoPanier').className = 'stock-suffisant';
+            }
+        } else {
+            document.getElementById('prixPanier').value = '';
+            document.getElementById('stockDispoPanier').value = '';
+        }
+    }
+    
+    function calculerTotal() {
+        var qte = parseInt(document.getElementById('quantite').value) || 0;
+        var prix = parseFloat(document.getElementById('prixVendu').value) || 0;
+        var remise = parseFloat(document.getElementById('remise').value) || 0;
+        var total = (qte * prix) - remise;
+        if (total < 0) total = 0;
+        document.getElementById('total').innerHTML = total.toLocaleString() + ' FCFA';
+    }
+    
+    function afficherRecu(venteData) {
+    // Remplir les infos du ticket
+    document.getElementById('recuNumero').innerHTML = venteData.numero || '---';
+    document.getElementById('recuDate').innerHTML = venteData.date || '---';
+    document.getElementById('recuHeure').innerHTML = venteData.heure || '---';
+    document.getElementById('recuVendeur').innerHTML = venteData.vendeur || '---';
+    document.getElementById('recuTotalBrut').innerHTML = (venteData.totalBrut || 0).toLocaleString() + ' FCFA';
+    document.getElementById('recuRemise').innerHTML = (venteData.remise || 0).toLocaleString() + ' FCFA';
+    document.getElementById('recuTotal').innerHTML = (venteData.total || 0).toLocaleString() + ' FCFA';
+    
+    // Remplir les articles
+    var tbody = document.getElementById('recuArticles');
+    tbody.innerHTML = '';
+    venteData.articles.forEach(function(article) {
+        var row = tbody.insertRow();
+        row.insertCell(0).innerHTML = article.nom;
+        row.insertCell(1).innerHTML = article.quantite;
+        row.insertCell(2).innerHTML = article.prix.toLocaleString() + ' FCFA';
+        row.insertCell(3).innerHTML = article.total.toLocaleString() + ' FCFA';
+    });
+    
+    // Afficher le modal
+    document.getElementById('modalRecu').style.display = 'flex';
+}
+
+function fermerRecu() {
+    document.getElementById('modalRecu').style.display = 'none';
+}
+
+function imprimerRecu() {
+    var recuContent = document.querySelector('.recu').cloneNode(true);
+    // Supprimer les boutons pour l'impression
+    var buttons = recuContent.querySelector('.recu-buttons');
+    if (buttons) buttons.remove();
+    
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ticket de caisse</title>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    padding: 20px;
+                    margin: 0;
+                }
+                .recu {
+                    max-width: 350px;
+                    margin: 0 auto;
+                    background: white;
+                }
+                .recu-header {
+                    background: #1e3a8a;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                }
+                .recu-body {
+                    padding: 20px;
+                }
+                .recu-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                .recu-table th {
+                    background: #f0f0f0;
+                    padding: 8px;
+                    text-align: left;
+                }
+                .recu-table td {
+                    padding: 6px 8px;
+                    border-bottom: 1px solid #eee;
+                }
+                .recu-grand-total td {
+                    border-top: 2px solid #1e3a8a;
+                    font-weight: bold;
+                }
+                .recu-footer {
+                    background: #f8f9fa;
+                    padding: 15px;
+                    text-align: center;
+                    font-size: 11px;
+                }
+                @media print {
+                    body {
+                        padding: 0;
+                        margin: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            ${recuContent.outerHTML}
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 1000);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+    
+    function validerVente() {
+    var produit = document.getElementById('produitSelect').value;
+    var quantite = parseInt(document.getElementById('quantite').value);
+    var prixVendu = parseFloat(document.getElementById('prixVendu').value);
+    var remise = parseFloat(document.getElementById('remise').value);
+    var total = (quantite * prixVendu) - remise;
+    
+    if (!produit) { alert('Sélectionnez un produit'); return; }
+    if (quantite <= 0) { alert('Quantité invalide'); return; }
+    
+    // Vérifier le stock
+    var p = tousProduits.find(x => x.nom === produit);
+    if (p && quantite > p.stock) {
+        alert(`Stock insuffisant ! Stock disponible: ${p.stock} unités`);
+        return;
+    }
+    
+    var msgDiv = document.getElementById('venteMessage');
+    msgDiv.innerHTML = '⏳ Enregistrement...';
+    msgDiv.style.display = 'block';
+    msgDiv.style.background = '#d1ecf1';
+    msgDiv.style.color = '#0c5460';
+    
+    fetch('/api/valider_vente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            produit: produit,
+            quantite: quantite,
+            prixVente: prixVendu,
+            remise: remise,
+            total: total
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            msgDiv.innerHTML = '✅ ' + data.message;
+            msgDiv.style.background = '#d4edda';
+            msgDiv.style.color = '#155724';
+            
+            // Afficher le reçu
+            var recuData = {
+                numero: data.vente_id || 'TKT-' + Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                heure: new Date().toLocaleTimeString('fr-FR'),
+                vendeur: sessionStorage.getItem('user_nom') || 'Gérant',
+                totalBrut: quantite * prixVendu,
+                remise: remise,
+                total: total,
+                articles: [{
+                    nom: produit,
+                    quantite: quantite,
+                    prix: prixVendu,
+                    total: quantite * prixVendu
+                }]
+            };
+            afficherRecu(recuData);
+            
+            // Réinitialiser le formulaire
+            document.getElementById('produitSelect').value = '';
+            document.getElementById('quantite').value = 1;
+            document.getElementById('remise').value = 0;
+            document.getElementById('prixVendu').value = '';
+            document.getElementById('stockDispo').value = '';
+            document.getElementById('total').innerHTML = '0 FCFA';
+            
+            // Recharger les produits (met à jour le stock)
+            chargerProduits();
+            
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        } else {
+            msgDiv.innerHTML = '❌ ' + data.error;
+            msgDiv.style.background = '#f8d7da';
+            msgDiv.style.color = '#721c24';
+        }
+    });
+}
+    
+    // ========== FONCTIONS PANIER ==========
+    
+    function ajouterAuPanier() {
+        var produit = document.getElementById('produitPanier').value;
+        var quantite = parseInt(document.getElementById('quantitePanier').value);
+        var prix = parseFloat(document.getElementById('prixPanier').value);
+        
+        if (!produit) { alert('Sélectionnez un produit'); return; }
+        if (!quantite || quantite <= 0) { alert('Quantité invalide'); return; }
+        if (!prix || prix <= 0) { alert('Prix invalide'); return; }
+        
+        var p = tousProduits.find(x => x.nom === produit);
+        if (p && quantite > p.stock) {
+            alert(`Stock insuffisant pour ${produit} ! Stock disponible: ${p.stock} unités`);
+            return;
+        }
+        
+        var existing = panier.find(item => item.produit === produit);
+        if (existing) {
+            existing.quantite += quantite;
+            existing.total = existing.quantite * existing.prix;
+        } else {
+            panier.push({
+                produit: produit,
+                quantite: quantite,
+                prix: prix,
+                total: quantite * prix
+            });
+        }
+        
+        document.getElementById('produitPanier').value = '';
+        document.getElementById('quantitePanier').value = 1;
+        document.getElementById('prixPanier').value = '';
+        document.getElementById('stockDispoPanier').value = '';
+        afficherPanier();
+        calculerTotalPanier();
+    }
+    
+    function afficherPanier() {
+        var container = document.getElementById('panierList');
+        if (panier.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Panier vide</div>';
+            return;
+        }
+        
+        var html = '';
+        panier.forEach(function(item, index) {
+            html += '<div class="panier-item">';
+            html += '<span><strong>' + item.produit + '</strong></span>';
+            html += '<span>' + item.quantite + '</span>';
+            html += '<span>' + item.prix.toLocaleString() + ' FCFA</span>';
+            html += '<span>' + item.total.toLocaleString() + ' FCFA</span>';
+            html += '<span><button class="btn-remove" onclick="retirerDuPanier(' + index + ')">✕</button></span>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+    
+    function retirerDuPanier(index) {
+        panier.splice(index, 1);
+        afficherPanier();
+        calculerTotalPanier();
+    }
+    
+    function viderPanier() {
+        if (confirm('Vider tout le panier ?')) {
+            panier = [];
+            afficherPanier();
+            calculerTotalPanier();
+        }
+    }
+    
+    function calculerTotalPanier() {
+        var total = panier.reduce((sum, item) => sum + item.total, 0);
+        var remise = parseFloat(document.getElementById('remiseGlobale').value) || 0;
+        var finalTotal = total - remise;
+        if (finalTotal < 0) finalTotal = 0;
+    
+        document.getElementById('totalPanier').innerHTML = total.toLocaleString() + ' FCFA';
+        document.getElementById('totalApresRemise').innerHTML = finalTotal.toLocaleString() + ' FCFA';
+    }
+    
+    function validerPanier() {
+    if (panier.length === 0) {
+        alert('Panier vide');
+        return;
+    }
+    
+    var remiseGlobale = parseFloat(document.getElementById('remiseGlobale').value) || 0;
+    var total = panier.reduce((sum, item) => sum + item.total, 0);
+    var totalFinal = total - remiseGlobale;
+    if (totalFinal < 0) totalFinal = 0;
+    
+    // Vérifier le stock pour chaque article
+    for (var i = 0; i < panier.length; i++) {
+        var item = panier[i];
+        var p = tousProduits.find(x => x.nom === item.produit);
+        if (p && item.quantite > p.stock) {
+            alert(`Stock insuffisant pour ${item.produit} ! Stock disponible: ${p.stock} unités`);
+            return;
+        }
+    }
+    
+    var msg = "🛒 Récapitulatif du panier :\n\n";
+    panier.forEach(function(item) {
+        msg += "- " + item.produit + " : " + item.quantite + " x " + item.prix.toLocaleString() + " = " + item.total.toLocaleString() + " FCFA\n";
+    });
+    msg += "\n💰 Total brut : " + total.toLocaleString() + " FCFA";
+    msg += "\n🎁 Remise : " + remiseGlobale.toLocaleString() + " FCFA";
+    msg += "\n✅ Total à payer : " + totalFinal.toLocaleString() + " FCFA";
+    msg += "\n\nConfirmer la vente ?";
+    
+    if (!confirm(msg)) return;
+    
+    var msgDiv = document.getElementById('venteMessage');
+    msgDiv.innerHTML = '⏳ Enregistrement du panier...';
+    msgDiv.style.display = 'block';
+    msgDiv.style.background = '#d1ecf1';
+    msgDiv.style.color = '#0c5460';
+    
+    fetch('/api/valider_panier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            panier: panier,
+            remiseGlobale: remiseGlobale,
+            totalFinal: totalFinal
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            msgDiv.innerHTML = '✅ ' + data.message;
+            msgDiv.style.background = '#d4edda';
+            msgDiv.style.color = '#155724';
+            
+            // Afficher le reçu du panier
+            var recuData = {
+                numero: 'PANIER-' + Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                heure: new Date().toLocaleTimeString('fr-FR'),
+                vendeur: sessionStorage.getItem('user_nom') || 'Gérant',
+                totalBrut: total,
+                remise: remiseGlobale,
+                total: totalFinal,
+                articles: panier.map(item => ({
+                    nom: item.produit,
+                    quantite: item.quantite,
+                    prix: item.prix,
+                    total: item.total
+                }))
+            };
+            afficherRecu(recuData);
+            
+            // Vider le panier
+            panier = [];
+            afficherPanier();
+            document.getElementById('remiseGlobale').value = 0;
+            document.getElementById('totalPanier').innerHTML = '0 FCFA';
+            document.getElementById('totalApresRemise').innerHTML = '0 FCFA';
+            
+            // Recharger les produits (met à jour le stock)
+            chargerProduits();
+            
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        } else {
+            msgDiv.innerHTML = '❌ ' + data.error;
+            msgDiv.style.background = '#f8d7da';
+            msgDiv.style.color = '#721c24';
+        }
+    });
+}
+    
+    function changerMode(nouveauMode) {
+        mode = nouveauMode;
+        if (mode === 'unique') {
+            document.getElementById('modeUnique').style.display = 'block';
+            document.getElementById('modeMultiple').style.display = 'none';
+            document.getElementById('btnModeUnique').style.background = '#1e3a8a';
+            document.getElementById('btnModeMultiple').style.background = '#6c757d';
+        } else {
+            document.getElementById('modeUnique').style.display = 'none';
+            document.getElementById('modeMultiple').style.display = 'block';
+            document.getElementById('btnModeUnique').style.background = '#6c757d';
+            document.getElementById('btnModeMultiple').style.background = '#1e3a8a';
+        }
+    }
+    
+    // Écouteurs
+    document.getElementById('quantite').addEventListener('input', function() {
+        updateProduitInfo();
+        calculerTotal();
+    });
+    document.getElementById('prixVendu').addEventListener('input', calculerTotal);
+    document.getElementById('remise').addEventListener('input', calculerTotal);
+    document.getElementById('remiseGlobale').addEventListener('input', calculerTotalPanier);
+    document.getElementById('quantitePanier').addEventListener('input', updateProduitPanierInfo);
+    
+    chargerProduits();
+</script>

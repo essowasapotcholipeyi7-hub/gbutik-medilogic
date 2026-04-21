@@ -1,0 +1,83 @@
+<div class="card">
+  <h2>📜 Historique des ventes</h2>
+  <div id="historiqueMessage"></div>
+
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+    <input type="text" id="searchFilter" placeholder="🔍 Produit ou vendeur..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+    <button onclick="filtrerVentes()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px;">🔍 Filtrer</button>
+    <button onclick="resetFiltres()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Réinitialiser</button>
+  </div>
+
+  <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>💰 Total CA:</strong> <span id="totalCA">0</span> FCFA</div>
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>📦 Nombre ventes:</strong> <span id="totalVentes">0</span></div>
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>🔢 Produits vendus:</strong> <span id="totalProduits">0</span></div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead><tr><th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total net</th><th>Vendeur</th></tr></thead>
+      <tbody id="historiqueBody"><tr><td colspan="8">Chargement...</td></tr></tbody>
+    </table>
+  </div>
+  <button onclick="chargerHistorique()" style="margin-top:15px; background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Actualiser</button>
+</div>
+
+<style>
+  .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 500px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+  td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; }
+</style>
+
+<script>
+  let toutesVentes = [];
+  
+  function chargerHistorique() {
+    fetch('/api/getHistoriqueVentes')
+      .then(response => response.json())
+      .then(data => {
+        toutesVentes = data;
+        afficherVentes(data);
+      });
+  }
+  
+  function afficherVentes(ventes) {
+    var tbody = document.getElementById('historiqueBody');
+    var totalCA = 0, totalProduits = 0;
+    tbody.innerHTML = '';
+    if (ventes.length === 0) { tbody.innerHTML = '<tr><td colspan="8">Aucune vente</td></tr>'; }
+    ventes.forEach(function(v) {
+      totalCA += v.total_net || 0;
+      totalProduits += v.quantite || 0;
+      var row = tbody.insertRow();
+      row.insertCell(0).textContent = v.date || '';
+      row.insertCell(1).textContent = v.heure || '';
+      row.insertCell(2).innerHTML = '<strong>' + (v.produit || '') + '</strong>';
+      row.insertCell(3).textContent = v.quantite || 0;
+      row.insertCell(4).textContent = (v.prix_unitaire || 0).toLocaleString() + ' FCFA';
+      row.insertCell(5).textContent = (v.prix_vendu || 0).toLocaleString() + ' FCFA';
+      row.insertCell(6).innerHTML = '<strong>' + (v.total_net || 0).toLocaleString() + ' FCFA</strong>';
+      row.insertCell(7).textContent = v.vendeur || '';
+    });
+    document.getElementById('totalCA').innerHTML = totalCA.toLocaleString();
+    document.getElementById('totalVentes').innerHTML = ventes.length;
+    document.getElementById('totalProduits').innerHTML = totalProduits;
+  }
+  
+  function filtrerVentes() {
+    var terme = document.getElementById('searchFilter').value.toLowerCase();
+    if (!terme) { afficherVentes(toutesVentes); return; }
+    var filtres = toutesVentes.filter(function(v) {
+      return (v.produit && v.produit.toLowerCase().includes(terme)) || (v.vendeur && v.vendeur.toLowerCase().includes(terme));
+    });
+    afficherVentes(filtres);
+  }
+  
+  function resetFiltres() {
+    document.getElementById('searchFilter').value = '';
+    afficherVentes(toutesVentes);
+  }
+  
+  chargerHistorique();
+</script>

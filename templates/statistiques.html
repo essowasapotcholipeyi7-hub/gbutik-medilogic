@@ -1,0 +1,262 @@
+<div class="card">
+    <!-- En-tête avec bouton retour -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h2>📊 Statistiques - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
+            ← Retour
+        </a>
+    </div>
+    
+    <div id="statMessage"></div>
+    
+    <!-- Filtres -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📆 Période</label>
+            <select id="periodeStat" onchange="changerPeriode()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <option value="jour">📅 Aujourd'hui</option>
+                <option value="semaine">📆 Cette semaine</option>
+                <option value="mois">📆 Ce mois</option>
+                <option value="annee">📆 Cette année</option>
+                <option value="personnalise">📅 Période personnalisée</option>
+            </select>
+        </div>
+        <div id="dateDebutGroup" style="display: none; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date début</label>
+            <input type="date" id="dateDebut" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div id="dateFinGroup" style="display: none; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date fin</label>
+            <input type="date" id="dateFin" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <button onclick="chargerStatistiques()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        </div>
+    </div>
+    
+    <!-- Cartes KPI -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <h3 id="statChiffreAffaire">0</h3>
+            <p>Chiffre d'affaires</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <h3 id="statNbVentes">0</h3>
+            <p>Nombre de ventes</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔢</div>
+            <h3 id="statNbProduits">0</h3>
+            <p>Produits vendus</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🎫</div>
+            <h3 id="statTicketMoyen">0</h3>
+            <p>Ticket moyen</p>
+        </div>
+    </div>
+    
+    <!-- Top produits -->
+    <h3>🏆 Top 5 produits les plus vendus</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Produit</th><th>Quantité vendue</th><th>Chiffre d'affaires</th></tr>
+            </thead>
+            <tbody id="topProduitsBody">
+                <tr><td colspan="3" style="text-align:center;">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Top vendeurs -->
+    <h3>👥 Top 5 vendeurs</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Vendeur</th><th>Nombre de ventes</th><th>Chiffre d'affaires</th></tr>
+            </thead>
+            <tbody id="topVendeursBody">
+                <tr><td colspan="3" style="text-align:center;">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        color: white;
+        padding: 25px 20px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-icon {
+        font-size: 32px;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+    .stat-card h3 {
+        font-size: 28px;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: white;
+    }
+    .stat-card p {
+        font-size: 13px;
+        opacity: 0.85;
+        margin: 0;
+    }
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        margin-top: 10px;
+        margin-bottom: 25px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th {
+        background: #1e3a8a;
+        color: white;
+        padding: 12px;
+        position: sticky;
+        top: 0;
+    }
+    td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    tr:hover {
+        background-color: #f8f9fa;
+    }
+    .card {
+        max-width: 1100px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    h2 {
+        color: #1e3a8a;
+        margin: 0;
+    }
+    h3 {
+        color: #1e3a8a;
+        margin: 20px 0 10px 0;
+    }
+    label {
+        font-weight: bold;
+        color: #555;
+    }
+    @media (max-width: 768px) {
+        .stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .stat-card h3 {
+            font-size: 20px;
+        }
+        .stat-icon {
+            font-size: 24px;
+        }
+        .card h2 {
+            font-size: 18px;
+        }
+    }
+</style>
+
+<script>
+    function changerPeriode() {
+        var periode = document.getElementById('periodeStat').value;
+        var debutGroup = document.getElementById('dateDebutGroup');
+        var finGroup = document.getElementById('dateFinGroup');
+        
+        if (periode === 'personnalise') {
+            debutGroup.style.display = 'block';
+            finGroup.style.display = 'block';
+        } else {
+            debutGroup.style.display = 'none';
+            finGroup.style.display = 'none';
+        }
+        chargerStatistiques();
+    }
+    
+    function chargerStatistiques() {
+        var periode = document.getElementById('periodeStat').value;
+        var dateDebut = '';
+        var dateFin = '';
+        
+        if (periode === 'personnalise') {
+            dateDebut = document.getElementById('dateDebut').value;
+            dateFin = document.getElementById('dateFin').value;
+            if (!dateDebut || !dateFin) {
+                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">❌ Veuillez sélectionner les deux dates</div>';
+                return;
+            }
+        }
+        
+        document.getElementById('statMessage').innerHTML = '<div style="background:#d1ecf1; color:#0c5460; padding:10px; border-radius:8px;">⏳ Chargement...</div>';
+        
+        fetch('/api/get_statistiques?periode=' + periode + '&date_debut=' + dateDebut + '&date_fin=' + dateFin)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('statMessage').innerHTML = '';
+                
+                document.getElementById('statChiffreAffaire').innerHTML = (data.chiffreAffaire || 0).toLocaleString('fr-FR') + ' FCFA';
+                document.getElementById('statNbVentes').innerHTML = (data.nbVentes || 0).toLocaleString('fr-FR');
+                document.getElementById('statNbProduits').innerHTML = (data.nbProduitsVendus || 0).toLocaleString('fr-FR');
+                document.getElementById('statTicketMoyen').innerHTML = Math.round(data.ticketMoyen || 0).toLocaleString('fr-FR') + ' FCFA';
+                
+                var topP = document.getElementById('topProduitsBody');
+                topP.innerHTML = '';
+                if (data.topProduits && data.topProduits.length > 0) {
+                    data.topProduits.forEach(function(p) {
+                        var row = topP.insertRow();
+                        row.insertCell(0).innerHTML = '<strong>' + (p.produit || '-') + '</strong>';
+                        row.insertCell(1).innerHTML = (p.quantite || 0).toLocaleString('fr-FR');
+                        row.insertCell(2).innerHTML = (p.chiffreAffaire || 0).toLocaleString('fr-FR') + ' FCFA';
+                    });
+                } else {
+                    topP.innerHTML = '<td><td colspan="3" style="text-align:center;">Aucune donnée<\/td><\/tr>';
+                }
+                
+                var topV = document.getElementById('topVendeursBody');
+                topV.innerHTML = '';
+                if (data.topVendeurs && data.topVendeurs.length > 0) {
+                    data.topVendeurs.forEach(function(v) {
+                        var row = topV.insertRow();
+                        row.insertCell(0).innerHTML = '<strong>' + (v.vendeur || '-') + '</strong>';
+                        row.insertCell(1).innerHTML = (v.nbVentes || 0).toLocaleString('fr-FR');
+                        row.insertCell(2).innerHTML = (v.chiffreAffaire || 0).toLocaleString('fr-FR') + ' FCFA';
+                    });
+                } else {
+                    topV.innerHTML = '<tr><td colspan="3" style="text-align:center;">Aucune donnée<\/td><\/tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">❌ Erreur de chargement</div>';
+            });
+    }
+    
+    chargerStatistiques();
+</script>

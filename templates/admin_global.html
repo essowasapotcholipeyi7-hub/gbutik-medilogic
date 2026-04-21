@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Global - GBoutik-MediLogic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 { font-size: 32px; color: #1e3a8a; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 { color: #1e3a8a; margin-bottom: 20px; }
+        .table-container { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        .statut-attente { background: #fff3cd; color: #856404; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+        .statut-actif { background: #d4edda; color: #155724; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+        .statut-refuse { background: #f8d7da; color: #721c24; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+        .btn-accepter { background: #28a745; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+        .btn-refuser { background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-activer { background: #ffc107; color: #333; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; }
+        .tab.active { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .logout-btn:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👑 Admin Global - GBoutik-MediLogic</h1>
+        <a href="/logout_admin" class="logout-btn">🔓 Déconnexion</a>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card"><h3 id="nbTotal">0</h3><p>Total boutiques</p></div>
+        <div class="stat-card"><h3 id="nbActives">0</h3><p>Boutiques actives</p></div>
+        <div class="stat-card"><h3 id="nbAttente">0</h3><p>En attente</p></div>
+        <div class="stat-card"><h3 id="dateToday">-</h3><p>Dernière mise à jour</p></div>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab active" onclick="changerOnglet('toutes')">📋 Toutes les boutiques</button>
+        <button class="tab" onclick="changerOnglet('attente')">⏳ En attente</button>
+        <button class="tab" onclick="changerOnglet('actives')">✅ Actives</button>
+        <button class="tab" onclick="changerOnglet('refusees')">❌ Refusées</button>
+    </div>
+    
+    <div class="card">
+        <h2>📋 Liste des boutiques</h2>
+        <div class="table-container">
+            <table id="boutiquesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Date</th><th>Statut</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="boutiquesBody">
+                    <tr><td colspan="7">Chargement...<\/td><\/tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let toutesBoutiques = [];
+        let ongletActuel = 'toutes';
+        
+        function chargerBoutiques() {
+            fetch('/api/get_toutes_boutiques')
+                .then(response => response.json())
+                .then(data => {
+                    toutesBoutiques = data;
+                    let nbTotal = data.length;
+                    let nbActives = data.filter(b => b.actif === 'oui').length;
+                    let nbAttente = data.filter(b => b.actif === 'non').length;
+                    let nbRefusees = data.filter(b => b.actif === 'refuse').length;
+                    
+                    document.getElementById('nbTotal').innerHTML = nbTotal;
+                    document.getElementById('nbActives').innerHTML = nbActives;
+                    document.getElementById('nbAttente').innerHTML = nbAttente;
+                    document.getElementById('dateToday').innerHTML = new Date().toLocaleDateString('fr-FR');
+                    
+                    afficherBoutiques();
+                });
+        }
+        
+        function afficherBoutiques() {
+            let boutiquesFiltrees = [];
+            
+            if (ongletActuel === 'toutes') {
+                boutiquesFiltrees = toutesBoutiques;
+            } else if (ongletActuel === 'attente') {
+                boutiquesFiltrees = toutesBoutiques.filter(b => b.actif === 'non');
+            } else if (ongletActuel === 'actives') {
+                boutiquesFiltrees = toutesBoutiques.filter(b => b.actif === 'oui');
+            } else if (ongletActuel === 'refusees') {
+                boutiquesFiltrees = toutesBoutiques.filter(b => b.actif === 'refuse');
+            }
+            
+            var tbody = document.getElementById('boutiquesBody');
+            tbody.innerHTML = '';
+            
+            if (boutiquesFiltrees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">Aucune boutique trouvée<\/td><\/tr>';
+                return;
+            }
+            
+            boutiquesFiltrees.forEach(b => {
+                var row = tbody.insertRow();
+                row.insertCell(0).textContent = b.id;
+                row.insertCell(1).innerHTML = '<strong>' + b.nom + '</strong>';
+                row.insertCell(2).textContent = b.email;
+                row.insertCell(3).textContent = b.telephone || '-';
+                row.insertCell(4).textContent = b.date || '-';
+                
+                // Statut
+                let statutHtml = '';
+                if (b.actif === 'oui') {
+                    statutHtml = '<span class="statut-actif">✅ Active</span>';
+                } else if (b.actif === 'non') {
+                    statutHtml = '<span class="statut-attente">⏳ En attente</span>';
+                } else {
+                    statutHtml = '<span class="statut-refuse">❌ Refusée</span>';
+                }
+                row.insertCell(5).innerHTML = statutHtml;
+                
+                // Actions
+                let actionCell = row.insertCell(6);
+                
+                if (b.actif === 'non') {
+                    // Boutique en attente
+                    let btnAccepter = document.createElement('button');
+                    btnAccepter.textContent = '✅ Accepter';
+                    btnAccepter.className = 'btn-accepter';
+                    btnAccepter.onclick = (function(email) {
+                        return function() { traiterDemande(email, 'activer'); };
+                    })(b.email);
+                    actionCell.appendChild(btnAccepter);
+                    
+                    let btnRefuser = document.createElement('button');
+                    btnRefuser.textContent = '❌ Refuser';
+                    btnRefuser.className = 'btn-refuser';
+                    btnRefuser.onclick = (function(email) {
+                        return function() { traiterDemande(email, 'refuser'); };
+                    })(b.email);
+                    actionCell.appendChild(btnRefuser);
+                } else if (b.actif === 'oui') {
+                    // Boutique active
+                    let btnDesactiver = document.createElement('button');
+                    btnDesactiver.textContent = '🔒 Désactiver';
+                    btnDesactiver.className = 'btn-refuser';
+                    btnDesactiver.onclick = (function(email) {
+                        return function() { desactiverBoutique(email); };
+                    })(b.email);
+                    actionCell.appendChild(btnDesactiver);
+                } else {
+                    // Boutique refusée
+                    let btnReactiver = document.createElement('button');
+                    btnReactiver.textContent = '🔄 Réactiver';
+                    btnReactiver.className = 'btn-activer';
+                    btnReactiver.onclick = (function(email) {
+                        return function() { traiterDemande(email, 'activer'); };
+                    })(b.email);
+                    actionCell.appendChild(btnReactiver);
+                }
+            });
+        }
+        
+        function traiterDemande(email, action) {
+            let message = action === 'activer' ? 'accepter cette boutique ?' : 'refuser cette demande ?';
+            if (confirm(`Voulez-vous vraiment ${message}`)) {
+                fetch('/api/admin_valider_boutique', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, action: action })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        chargerBoutiques();
+                    } else {
+                        alert('Erreur: ' + data.error);
+                    }
+                });
+            }
+        }
+        
+        function desactiverBoutique(email) {
+            if (confirm('Voulez-vous vraiment désactiver cette boutique ?')) {
+                fetch('/api/admin_valider_boutique', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, action: 'refuser' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        chargerBoutiques();
+                    } else {
+                        alert('Erreur: ' + data.error);
+                    }
+                });
+            }
+        }
+        
+        function changerOnglet(onglet) {
+            ongletActuel = onglet;
+            
+            // Mettre à jour l'apparence des onglets
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            afficherBoutiques();
+        }
+        
+        chargerBoutiques();
+        setInterval(chargerBoutiques, 30000);
+    </script>
+</body>
+</html>

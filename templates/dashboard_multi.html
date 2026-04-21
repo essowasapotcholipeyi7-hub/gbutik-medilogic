@@ -1,0 +1,60 @@
+<div class="card">
+    <h2>🏪 Bienvenue chez {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    
+    <div class="menu">
+        <a href="/catalogue_boutique">📋 Catalogue</a>
+        <a href="/vente_boutique">💰 Vente</a>
+        <a href="/stock_boutique">📦 Stock</a>
+        <a href="/journal_mouvements">📓 Journal</a>
+        <a href="/historique_ventes">📜 Historique</a>
+        <a href="/caisse_journaliere">📊 Caisse</a>
+        <a href="/gestion_vendeurs">👥 Vendeurs</a>
+        <a href="/approvisionnement">📥 Approvisionnement</a>
+        <a href="/statistiques">📈 Statistiques</a>
+        <a href="/corrections">🔄 Corrections</a>
+        <a href="/deconnexion">🔓 Déconnexion</a>
+    </div>
+</div>
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f5f5;
+        min-height: 100vh;
+    }
+    .card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        width: 90%;
+        max-width: 1000px;
+        margin: 50px auto;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    h2 {
+        color: #1e3a8a;
+        margin-bottom: 30px;
+    }
+    .menu {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+        margin-top: 30px;
+    }
+    .menu a {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        color: white;
+        padding: 12px 15px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: transform 0.3s;
+        text-align: center;
+    }
+    .menu a:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+</style>

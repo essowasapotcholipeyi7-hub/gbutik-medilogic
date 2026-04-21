@@ -1,0 +1,123 @@
+<div class="card">
+    <h2>👥 Gestion des vendeurs - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <div id="vendeurMessage"></div>
+    
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+        <input type="text" id="newUsername" placeholder="Nom d'utilisateur" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+        <input type="password" id="newPassword" placeholder="Mot de passe" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+        <input type="text" id="newNom" placeholder="Nom complet" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+    
+    <button onclick="ajouterVendeur()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">➕ Ajouter un vendeur</button>
+    
+    <h3>📋 Liste des vendeurs</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th><th>Nom d'utilisateur</th><th>Nom complet</th><th>Statut</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="vendeursBody">
+                <tr><td colspan="5">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; display:inline-block;">
+            ← Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<style>
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 400px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin-bottom: 20px; text-align: center; }
+    .actif { color: #28a745; font-weight: bold; }
+    .inactif { color: #dc3545; font-weight: bold; }
+</style>
+
+<script>
+    function chargerVendeurs() {
+        fetch('/api/get_vendeurs')
+            .then(response => response.json())
+            .then(data => {
+                var tbody = document.getElementById('vendeursBody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">Aucun vendeur<\/td><\/tr>';
+                    return;
+                }
+                
+                data.forEach(function(v) {
+                    var row = tbody.insertRow();
+                    row.insertCell(0).textContent = v.id || '';
+                    row.insertCell(1).innerHTML = '<strong>' + (v.username || '-') + '</strong>';
+                    row.insertCell(2).textContent = v.nom || '';
+                    row.insertCell(3).innerHTML = v.actif ? '<span class="actif">✅ Actif</span>' : '<span class="inactif">❌ Inactif</span>';
+                    
+                    var btn = document.createElement('button');
+                    btn.textContent = v.actif ? '🔒 Désactiver' : '✅ Activer';
+                    btn.style = v.actif ? 'background:#dc3545; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;' : 'background:#28a745; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;';
+                    btn.onclick = (function(id, actif) {
+                        return function() { toggleVendeur(id, actif); };
+                    })(v.id, v.actif);
+                    row.insertCell(4).appendChild(btn);
+                });
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('vendeursBody').innerHTML = '<tr><td colspan="5">Erreur de chargement<\/td><\/tr>';
+            });
+    }
+    
+    function ajouterVendeur() {
+        var username = document.getElementById('newUsername').value;
+        var password = document.getElementById('newPassword').value;
+        var nom = document.getElementById('newNom').value;
+        
+        if (!username || !password || !nom) {
+            alert('Tous les champs sont requis');
+            return;
+        }
+        
+        fetch('/api/ajouter_vendeur', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password, nom: nom })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newNom').value = '';
+                chargerVendeurs();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        });
+    }
+    
+    function toggleVendeur(id, actif) {
+        fetch('/api/toggle_vendeur', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, actif: actif })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                chargerVendeurs();
+            }
+        });
+    }
+    
+    chargerVendeurs();
+</script>

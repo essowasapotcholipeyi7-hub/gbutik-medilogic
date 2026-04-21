@@ -1,0 +1,329 @@
+<div class="card">
+    <!-- En-tête avec bouton retour en haut à droite -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h2>📜 Historique des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
+            ← Retour
+        </a>
+    </div>
+    
+    <div id="historiqueMessage"></div>
+
+    <!-- Filtres -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📆 Période</label>
+            <select id="periodeFilter" onchange="changerPeriode()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <option value="all">Toutes les ventes</option>
+                <option value="today">📅 Aujourd'hui</option>
+                <option value="week">📆 Cette semaine</option>
+                <option value="month">📆 Ce mois</option>
+                <option value="custom">📅 Période personnalisée</option>
+            </select>
+        </div>
+        <div id="dateDebutGroup" style="display: none; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date début</label>
+            <input type="date" id="dateDebut" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div id="dateFinGroup" style="display: none; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date fin</label>
+            <input type="date" id="dateFin" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🔎 Rechercher</label>
+            <input type="text" id="searchInput" placeholder="Produit ou vendeur..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <button onclick="appliquerFiltres()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍 Appliquer</button>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats">
+        <div class="stat-card"><h3 id="totalCA">0</h3><p>Chiffre d'affaires</p></div>
+        <div class="stat-card"><h3 id="nbVentes">0</h3><p>Nombre de ventes</p></div>
+        <div class="stat-card"><h3 id="nbProduits">0</h3><p>Produits vendus</p></div>
+    </div>
+
+    <!-- Tableau -->
+    <div class="table-container">
+        <table id="historiqueTable">
+            <thead>
+                <tr>
+                    <th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total</th><th>Vendeur</th>
+                </tr>
+            </thead>
+            <tbody id="historiqueBody">
+                <tr><td colspan="8">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Boutons d'export -->
+    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <button onclick="chargerHistorique()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="exporterCSV()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">📥 Exporter CSV</button>
+        <button onclick="exporterPDF()" style="background:#dc3545; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">📄 Exporter PDF</button>
+        <button onclick="imprimer()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🖨️ Imprimer</button>
+    </div>
+</div>
+
+<style>
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 500px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 1200px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin: 0; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+    .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 15px; border-radius: 15px; text-align: center; }
+    .stat-card h3 { font-size: 24px; margin-bottom: 5px; }
+    label { font-weight: bold; color: #555; font-size: 12px; }
+    @media print {
+        .card { box-shadow: none; margin: 0; padding: 10px; }
+        .stats, button, .btn-print, .btn-csv, .btn-pdf { display: none; }
+        .table-container { overflow: visible; max-height: none; }
+        table { border: 1px solid #ddd; }
+        th { background: #1e3a8a; color: white; }
+    }
+    @media (max-width: 768px) {
+        .card h2 { font-size: 18px; }
+    }
+</style>
+
+<script>
+    let toutesVentes = [];
+    let ventesFiltrees = [];
+    
+    function changerPeriode() {
+        var periode = document.getElementById('periodeFilter').value;
+        var debutGroup = document.getElementById('dateDebutGroup');
+        var finGroup = document.getElementById('dateFinGroup');
+        
+        if (periode === 'custom') {
+            debutGroup.style.display = 'block';
+            finGroup.style.display = 'block';
+        } else {
+            debutGroup.style.display = 'none';
+            finGroup.style.display = 'none';
+        }
+        appliquerFiltres();
+    }
+    
+    function chargerHistorique() {
+        fetch('/api/get_historique_ventes')
+            .then(response => response.json())
+            .then(data => {
+                toutesVentes = data;
+                appliquerFiltres();
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('historiqueBody').innerHTML = '<tr><td colspan="8">Erreur de chargement<\/td><\/tr>';
+            });
+    }
+    
+    function appliquerFiltres() {
+        var periode = document.getElementById('periodeFilter').value;
+        var search = document.getElementById('searchInput').value.toLowerCase();
+        var dateDebut = document.getElementById('dateDebut').value;
+        var dateFin = document.getElementById('dateFin').value;
+        
+        var filtered = [...toutesVentes];
+        
+        if (periode === 'today') {
+            var today = new Date().toLocaleDateString('fr-FR');
+            filtered = filtered.filter(v => v.date === today);
+        } else if (periode === 'week') {
+            var today = new Date();
+            var weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            filtered = filtered.filter(v => {
+                if (!v.date) return false;
+                var parts = v.date.split('/');
+                var vDate = new Date(parts[2], parts[1]-1, parts[0]);
+                return vDate >= weekAgo;
+            });
+        } else if (periode === 'month') {
+            var today = new Date();
+            filtered = filtered.filter(v => {
+                if (!v.date) return false;
+                var parts = v.date.split('/');
+                return parseInt(parts[1]) === today.getMonth() + 1 && parseInt(parts[2]) === today.getFullYear();
+            });
+        } else if (periode === 'custom' && dateDebut && dateFin) {
+            var debut = new Date(dateDebut);
+            var fin = new Date(dateFin);
+            fin.setHours(23, 59, 59);
+            filtered = filtered.filter(v => {
+                if (!v.date) return false;
+                var parts = v.date.split('/');
+                var vDate = new Date(parts[2], parts[1]-1, parts[0]);
+                return vDate >= debut && vDate <= fin;
+            });
+        }
+        
+        if (search) {
+            filtered = filtered.filter(v => 
+                (v.produit && v.produit.toLowerCase().includes(search)) ||
+                (v.vendeur && v.vendeur.toLowerCase().includes(search))
+            );
+        }
+        
+        ventesFiltrees = filtered;
+        afficherVentes();
+    }
+    
+    function afficherVentes() {
+        var tbody = document.getElementById('historiqueBody');
+        var totalCA = 0, nbVentes = 0, nbProduits = 0;
+        tbody.innerHTML = '';
+        
+        if (!ventesFiltrees || ventesFiltrees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Aucune vente pour cette période<\/td><\/tr>';
+            document.getElementById('totalCA').innerHTML = '0 FCFA';
+            document.getElementById('nbVentes').innerHTML = '0';
+            document.getElementById('nbProduits').innerHTML = '0';
+            return;
+        }
+        
+        ventesFiltrees.forEach(function(v) {
+            totalCA += v.total || 0;
+            nbVentes++;
+            nbProduits += v.quantite || 0;
+            
+            var row = tbody.insertRow();
+            row.insertCell(0).textContent = v.date || '';
+            row.insertCell(1).textContent = v.heure || '';
+            row.insertCell(2).innerHTML = '<strong>' + (v.produit || '') + '</strong>';
+            row.insertCell(3).textContent = v.quantite || 0;
+            row.insertCell(4).textContent = (v.prix_unitaire || 0).toLocaleString('fr-FR') + ' FCFA';
+            row.insertCell(5).textContent = (v.prix_vendu || 0).toLocaleString('fr-FR') + ' FCFA';
+            row.insertCell(6).innerHTML = '<strong>' + (v.total || 0).toLocaleString('fr-FR') + ' FCFA</strong>';
+            row.insertCell(7).textContent = v.vendeur || '';
+        });
+        
+        document.getElementById('totalCA').innerHTML = totalCA.toLocaleString('fr-FR') + ' FCFA';
+        document.getElementById('nbVentes').innerHTML = nbVentes;
+        document.getElementById('nbProduits').innerHTML = nbProduits;
+    }
+    
+    function rechercher() {
+        appliquerFiltres();
+    }
+    
+    function reinitialiser() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('periodeFilter').value = 'all';
+        document.getElementById('dateDebut').value = '';
+        document.getElementById('dateFin').value = '';
+        document.getElementById('dateDebutGroup').style.display = 'none';
+        document.getElementById('dateFinGroup').style.display = 'none';
+        appliquerFiltres();
+    }
+    
+    function exporterCSV() {
+        if (!ventesFiltrees || ventesFiltrees.length === 0) { 
+            alert('Aucune donnée à exporter'); 
+            return; 
+        }
+        
+        var csv = "Date,Heure,Produit,Quantité,Prix unitaire,Prix vendu,Total,Vendeur\n";
+        ventesFiltrees.forEach(function(v) {
+            csv += v.date + "," + v.heure + "," + v.produit + "," + v.quantite + "," + 
+                   v.prix_unitaire + "," + v.prix_vendu + "," + v.total + "," + v.vendeur + "\n";
+        });
+        
+        var blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = 'historique_ventes_' + new Date().toISOString().slice(0,19) + '.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ Export CSV réussi</div>';
+        setTimeout(() => { document.getElementById('historiqueMessage').innerHTML = ''; }, 3000);
+    }
+    
+    function exporterPDF() {
+        if (!ventesFiltrees || ventesFiltrees.length === 0) {
+            alert('Aucune donnée à exporter');
+            return;
+        }
+        
+        var totalCA = ventesFiltrees.reduce((sum, v) => sum + (v.total || 0), 0);
+        var totalVentes = ventesFiltrees.length;
+        var totalProduits = ventesFiltrees.reduce((sum, v) => sum + (v.quantite || 0), 0);
+        var today = new Date().toLocaleDateString('fr-FR');
+        
+        var rowsHtml = '';
+        ventesFiltrees.forEach(function(v) {
+            rowsHtml += `<tr>
+                <td style="border:1px solid #ddd; padding:8px;">${v.date || ''}</td>
+                <td style="border:1px solid #ddd; padding:8px;">${v.heure || ''}</td>
+                <td style="border:1px solid #ddd; padding:8px;"><strong>${v.produit || ''}</strong></td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:center;">${v.quantite || 0}</td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:right;">${(v.prix_unitaire || 0).toLocaleString('fr-FR')} FCFA</td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:right;">${(v.prix_vendu || 0).toLocaleString('fr-FR')} FCFA</td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>${(v.total || 0).toLocaleString('fr-FR')} FCFA</strong></td>
+                <td style="border:1px solid #ddd; padding:8px;">${v.vendeur || ''}</td>
+            </tr>`;
+        });
+        
+        var htmlContent = `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Historique des ventes - GBoutik-MediLogic</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
+                h1 { color: #1e3a8a; text-align: center; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .summary { display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; }
+                .summary-item { background: #1e3a8a; color: white; padding: 10px; border-radius: 8px; min-width: 150px; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background: #1e3a8a; color: white; padding: 10px; }
+                td { border: 1px solid #ddd; padding: 8px; }
+                .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #666; }
+                @media print {
+                    body { margin: 0; padding: 10px; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🏪 GBoutik-MediLogic</h1>
+            <div class="header">
+                <h2>Historique des ventes</h2>
+                <p>Généré le ${today}</p>
+            </div>
+            <div class="summary">
+                <div class="summary-item">💰 Total CA: ${totalCA.toLocaleString('fr-FR')} FCFA</div>
+                <div class="summary-item">📦 Nombre de ventes: ${totalVentes}</div>
+                <div class="summary-item">🔢 Produits vendus: ${totalProduits}</div>
+            </div>
+            <table>
+                <thead><tr><th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total</th><th>Vendeur</th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+            <div class="footer">Document généré par GBoutik-MediLogic</div>
+        </body>
+        </html>`;
+        
+        var printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.print();
+        
+        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ PDF généré</div>';
+        setTimeout(() => { document.getElementById('historiqueMessage').innerHTML = ''; }, 3000);
+    }
+    
+    function imprimer() {
+        exporterPDF();
+    }
+    
+    document.getElementById('searchInput').addEventListener('keyup', appliquerFiltres);
+    
+    chargerHistorique();
+</script>

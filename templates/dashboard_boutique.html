@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - GBoutik-MediLogic</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+        
+        /* En-tête */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header h1 { font-size: 1.5rem; }
+        .header h1 span { font-size: 0.9rem; opacity: 0.8; }
+        .deconnexion-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .deconnexion-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        /* Conteneur principal */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Cartes KPI */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        .kpi-card:hover { transform: translateY(-3px); }
+        .kpi-icon {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .kpi-info h3 { font-size: 24px; color: #1e3a8a; margin-bottom: 5px; }
+        .kpi-info p { color: #666; font-size: 13px; }
+        
+        /* Menu au milieu */
+        .menu-section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .menu-section h3 {
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            text-align: center;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+        .menu-item {
+            background: #f8f9fa;
+            color: #333;
+            padding: 12px 10px;
+            border-radius: 12px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .menu-item:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* Graphique + Alertes (en bas) */
+        .row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .card h3 {
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        /* Alertes stock */
+        .alerte-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .alerte-item:last-child { border-bottom: none; }
+        .alerte-produit { font-weight: bold; }
+        .alerte-stock {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .alerte-stock.rupture { background: #f8d7da; color: #721c24; }
+        .empty-alertes {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .row { grid-template-columns: 1fr; }
+            .header { flex-direction: column; text-align: center; }
+            .menu-item { font-size: 12px; padding: 10px 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏪 GBoutik-MediLogic <span>{{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</span></h1>
+        <a href="/deconnexion" class="deconnexion-btn">🔓 Déconnexion</a>
+    </div>
+    
+    <div class="container">
+        <!-- Cartes KPI -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon">💰</div>
+                <div class="kpi-info">
+                    <h3 id="caJour">0</h3>
+                    <p>CA aujourd'hui</p>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-info">
+                    <h3 id="caMois">0</h3>
+                    <p>CA du mois</p>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📦</div>
+                <div class="kpi-info">
+                    <h3 id="nbProduits">0</h3>
+                    <p>Produits en stock</p>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">⚠️</div>
+                <div class="kpi-info">
+                    <h3 id="nbAlertes">0</h3>
+                    <p>Alertes stock</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Menu au milieu -->
+        <div class="menu-section">
+            <h3>📋 Menu principal</h3>
+            <div class="menu-grid">
+                <a href="/catalogue_boutique" class="menu-item">📋 Catalogue</a>
+                <a href="/vente_boutique" class="menu-item">💰 Vente</a>
+                <a href="/stock_boutique" class="menu-item">📦 Stock</a>
+                <a href="/journal_mouvements" class="menu-item">📓 Journal</a>
+                <a href="/historique_ventes" class="menu-item">📜 Historique</a>
+                <a href="/caisse_journaliere" class="menu-item">📊 Caisse</a>
+                <a href="/gestion_vendeurs" class="menu-item">👥 Vendeurs</a>
+                <a href="/approvisionnement" class="menu-item">📥 Approvisionnement</a>
+                <a href="/statistiques" class="menu-item">📈 Statistiques</a>
+                <a href="/corrections" class="menu-item">🔄 Corrections</a>
+                <a href="/messages_gerant" class="menu-item">💬 Messages</a>
+            </div>
+        </div>
+        
+        <!-- Graphique + Alertes (en bas) -->
+        <div class="row">
+            <div class="card">
+                <h3>📈 Évolution des ventes (7 derniers jours)</h3>
+                <canvas id="evolutionChart" height="200"></canvas>
+            </div>
+            <div class="card">
+                <h3>⚠️ Produits en alerte</h3>
+                <div id="alertesList">
+                    <div class="empty-alertes">Chargement...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let evolutionChart = null;
+        
+        function chargerDashboard() {
+            // Charger les stats
+            fetch('/api/get_dashboard_stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('caJour').innerHTML = (data.ca_jour || 0).toLocaleString('fr-FR') + ' FCFA';
+                    document.getElementById('caMois').innerHTML = (data.ca_mois || 0).toLocaleString('fr-FR') + ' FCFA';
+                    document.getElementById('nbProduits').innerHTML = data.nb_produits || 0;
+                    document.getElementById('nbAlertes').innerHTML = data.alertes || 0;
+                    
+                    // Afficher les alertes
+                    var alertesDiv = document.getElementById('alertesList');
+                    if (data.produits_critiques && data.produits_critiques.length > 0) {
+                        var html = '';
+                        data.produits_critiques.forEach(p => {
+                            var classe = p.stock_restant <= 0 ? 'rupture' : '';
+                            html += `
+                                <div class="alerte-item">
+                                    <span class="alerte-produit">${p.produit_nom}</span>
+                                    <span class="alerte-stock ${classe}">Stock: ${p.stock_restant}/${p.seuil_alerte}</span>
+                                </div>
+                            `;
+                        });
+                        alertesDiv.innerHTML = html;
+                    } else {
+                        alertesDiv.innerHTML = '<div class="empty-alertes">✅ Aucun produit en alerte</div>';
+                    }
+                });
+            
+            // Charger l'évolution
+            fetch('/api/get_evolution_ventes')
+                .then(response => response.json())
+                .then(data => {
+                    if (evolutionChart) {
+                        evolutionChart.destroy();
+                    }
+                    var ctx = document.getElementById('evolutionChart').getContext('2d');
+                    evolutionChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.labels || [],
+                            datasets: [{
+                                label: 'Chiffre d\'affaires (FCFA)',
+                                data: data.values || [],
+                                borderColor: '#1e3a8a',
+                                backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: { position: 'top' }
+                            }
+                        }
+                    });
+                });
+        }
+        
+        chargerDashboard();
+        setInterval(chargerDashboard, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GBoutik-MediLogic - Multi Boutiques</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🏪 GBoutik-MediLogic</h1>
+        <div id="errorMsg" class="error"></div>
+        
+        <div class="form-group">
+            <label>🏢 Choisir la boutique</label>
+            <select id="boutique_id">
+                <option value="1">Boutique 1</option>
+                <option value="2">Boutique 2</option>
+                <option value="3">Boutique 3</option>
+                <option value="4">Boutique 4</option>
+                <option value="5">Boutique 5</option>
+                <option value="6">Boutique 6</option>
+                <option value="7">Boutique 7</option>
+                <option value="8">Boutique 8</option>
+                <option value="9">Boutique 9</option>
+                <option value="10">Boutique 10</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>🔑 Mot de passe gérant</label>
+            <input type="password" id="password" placeholder="admin123">
+        </div>
+        
+        <button onclick="seConnecter()">Se connecter</button>
+        
+        <div class="info">
+            💡 Mot de passe par défaut : <strong>admin123</strong>
+        </div>
+    </div>
+    
+    <script>
+        function seConnecter() {
+            var boutique_id = document.getElementById('boutique_id').value;
+            var password = document.getElementById('password').value;
+            var errorDiv = document.getElementById('errorMsg');
+            
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    boutique_id: boutique_id, 
+                    password: password, 
+                    role: 'gerant' 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorDiv.innerHTML = '❌ Mot de passe incorrect pour la boutique ' + boutique_id;
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                errorDiv.innerHTML = '❌ Erreur de connexion au serveur';
+                errorDiv.style.display = 'block';
+            });
+        }
+        
+        // Appuyer sur Entrée pour valider
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                seConnecter();
+            }
+        });
+    </script>
+</body>
+</html>

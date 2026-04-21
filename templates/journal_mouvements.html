@@ -1,0 +1,124 @@
+<div class="card">
+    <!-- En-tête avec bouton retour en haut à droite -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h2>📓 Journal des mouvements - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
+            ← Retour
+        </a>
+    </div>
+    
+    <div id="journalMessage"></div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <select id="typeFilter" style="padding: 10px; border:1px solid #ddd; border-radius:8px;">
+            <option value="all">Tous les types</option>
+            <option value="VENTE">Ventes</option>
+            <option value="VENTE_PANIER">Ventes panier</option>
+            <option value="APPROVISIONNEMENT">Approvisionnements</option>
+            <option value="ANNULATION_VENTE">Annulations</option>
+        </select>
+        <button onclick="appliquerFiltre()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍 Filtrer</button>
+        <button onclick="reinitialiserFiltre()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Réinitialiser</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th><th>Heure</th><th>Type</th><th>Produit</th><th>Qté</th><th>Stock avant</th><th>Stock après</th><th>Utilisateur</th>
+                </tr>
+            </thead>
+            <tbody id="journalBody">
+                <tr><td colspan="8">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <button onclick="chargerJournal()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+    </div>
+</div>
+
+<style>
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 500px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 1200px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin: 0; }
+    .type-vente { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+    .type-appro { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+    .type-annulation { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 12px; display: inline-block; }
+    @media (max-width: 768px) {
+        .card h2 {
+            font-size: 18px;
+        }
+        th, td {
+            font-size: 12px;
+            padding: 6px;
+        }
+    }
+</style>
+
+<script>
+    let tousMouvements = [];
+    
+    function chargerJournal() {
+        fetch('/api/get_journal')
+            .then(response => response.json())
+            .then(data => {
+                tousMouvements = data;
+                afficherJournal(data);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('journalBody').innerHTML = '<tr><td colspan="8">Erreur de chargement<\/td><\/tr>';
+            });
+    }
+    
+    function afficherJournal(mouvements) {
+        var tbody = document.getElementById('journalBody');
+        tbody.innerHTML = '';
+        
+        if (!mouvements || mouvements.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8">Aucun mouvement<\/td><\/tr>';
+            return;
+        }
+        
+        mouvements.forEach(function(m) {
+            var row = tbody.insertRow();
+            row.insertCell(0).textContent = m.date || '';
+            row.insertCell(1).textContent = m.heure || '';
+            
+            var typeClass = '';
+            if (m.type && m.type.includes('VENTE')) typeClass = 'type-vente';
+            else if (m.type && m.type.includes('APPROVISIONNEMENT')) typeClass = 'type-appro';
+            else typeClass = 'type-annulation';
+            
+            row.insertCell(2).innerHTML = '<span class="' + typeClass + '">' + (m.type || '-') + '</span>';
+            row.insertCell(3).innerHTML = '<strong>' + (m.produit || '-') + '</strong>';
+            row.insertCell(4).textContent = m.quantite || 0;
+            row.insertCell(5).textContent = (m.stockAvant || 0).toLocaleString();
+            row.insertCell(6).textContent = (m.stockApres || 0).toLocaleString();
+            row.insertCell(7).textContent = m.utilisateur || '';
+        });
+    }
+    
+    function appliquerFiltre() {
+        var typeFilter = document.getElementById('typeFilter').value;
+        if (typeFilter === 'all') {
+            afficherJournal(tousMouvements);
+        } else {
+            var filtres = tousMouvements.filter(m => m.type && m.type.includes(typeFilter));
+            afficherJournal(filtres);
+        }
+    }
+    
+    function reinitialiserFiltre() {
+        document.getElementById('typeFilter').value = 'all';
+        afficherJournal(tousMouvements);
+    }
+    
+    chargerJournal();
+    setInterval(chargerJournal, 30000);
+</script>

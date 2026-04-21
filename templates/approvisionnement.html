@@ -1,0 +1,177 @@
+<div class="card">
+    <!-- En-tête avec bouton retour -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h2>📥 Approvisionnement - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
+            ← Retour
+        </a>
+    </div>
+    
+    <div id="approMessage"></div>
+    
+    <!-- Barre de recherche -->
+    <div style="margin-bottom: 15px;">
+        <input type="text" id="searchProduitAppro" placeholder="🔍 Rechercher un produit..." 
+               style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" 
+               onkeyup="filtrerProduitsAppro()">
+    </div>
+    
+    <div class="form-group">
+        <label>📦 Produit</label>
+        <select id="produitAppro" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateStockActuel()">
+            <option value="">Sélectionnez un produit</option>
+        </select>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        <div class="form-group">
+            <label>📊 Stock actuel</label>
+            <input type="text" id="stockActuel" readonly style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
+        </div>
+        <div class="form-group">
+            <label>🔢 Quantité à ajouter</label>
+            <input type="number" id="quantiteAppro" min="1" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label>🏭 Fournisseur (optionnel)</label>
+        <input type="text" id="fournisseur" placeholder="Nom du fournisseur" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+    
+    <button onclick="approvisionner()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; margin-top:20px; cursor:pointer;">✅ Valider l'approvisionnement</button>
+    
+    <h3 style="margin-top: 30px;">📋 Derniers approvisionnements</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Heure</th><th>Produit</th><th>Quantité</th><th>Fournisseur</th></tr>
+            </thead>
+            <tbody id="approvisionnementsBody">
+                <tr><td colspan="5">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 300px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 10px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin: 0; }
+    #searchProduitAppro { transition: all 0.3s; }
+    #searchProduitAppro:focus { border-color: #1e3a8a; outline: none; box-shadow: 0 0 0 2px rgba(30,58,138,0.2); }
+    @media (max-width: 768px) {
+        .card h2 { font-size: 18px; }
+    }
+</style>
+
+<script>
+    let tousProduits = [];
+    let produitsFiltres = [];
+    
+    function chargerProduits() {
+        fetch('/api/get_produits')
+            .then(response => response.json())
+            .then(data => {
+                tousProduits = data;
+                produitsFiltres = [...data];
+                mettreAJourListe();
+            });
+    }
+    
+    function mettreAJourListe() {
+        var select = document.getElementById('produitAppro');
+        select.innerHTML = '<option value="">Sélectionnez un produit</option>';
+        
+        produitsFiltres.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.nom;
+            opt.textContent = p.nom + ' (Stock: ' + p.stock + ')';
+            select.appendChild(opt);
+        });
+    }
+    
+    function filtrerProduitsAppro() {
+        var searchTerm = document.getElementById('searchProduitAppro').value.toLowerCase();
+        if (!searchTerm) {
+            produitsFiltres = [...tousProduits];
+        } else {
+            produitsFiltres = tousProduits.filter(p => 
+                p.nom && p.nom.toLowerCase().includes(searchTerm)
+            );
+        }
+        mettreAJourListe();
+    }
+    
+    function updateStockActuel() {
+        var produit = document.getElementById('produitAppro').value;
+        var p = tousProduits.find(x => x.nom === produit);
+        if (p) {
+            document.getElementById('stockActuel').value = p.stock;
+        } else {
+            document.getElementById('stockActuel').value = '';
+        }
+    }
+    
+    function approvisionner() {
+        var produit = document.getElementById('produitAppro').value;
+        var quantite = parseInt(document.getElementById('quantiteAppro').value);
+        var fournisseur = document.getElementById('fournisseur').value;
+        
+        if (!produit || !quantite || quantite <= 0) {
+            alert('Sélectionnez un produit et une quantité valide');
+            return;
+        }
+        
+        fetch('/api/approvisionner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produit: produit, quantite: quantite, fournisseur: fournisseur })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('approMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">✅ ' + data.message + '</div>';
+                document.getElementById('quantiteAppro').value = '';
+                document.getElementById('fournisseur').value = '';
+                document.getElementById('produitAppro').value = '';
+                document.getElementById('stockActuel').value = '';
+                document.getElementById('searchProduitAppro').value = '';
+                chargerProduits();
+                chargerApprovisionnements();
+                setTimeout(() => { document.getElementById('approMessage').innerHTML = ''; }, 3000);
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        });
+    }
+    
+    function chargerApprovisionnements() {
+        fetch('/api/get_approvisionnements')
+            .then(response => response.json())
+            .then(data => {
+                var tbody = document.getElementById('approvisionnementsBody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">Aucun approvisionnement<\/td><\/tr>';
+                    return;
+                }
+                data.forEach(function(a) {
+                    var row = tbody.insertRow();
+                    row.insertCell(0).textContent = a.date || '';
+                    row.insertCell(1).textContent = a.heure || '';
+                    row.insertCell(2).innerHTML = '<strong>' + (a.produit || '') + '</strong>';
+                    row.insertCell(3).textContent = a.quantite || 0;
+                    row.insertCell(4).textContent = a.fournisseur || '-';
+                });
+            });
+    }
+    
+    chargerProduits();
+    chargerApprovisionnements();
+</script>

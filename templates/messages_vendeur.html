@@ -1,0 +1,144 @@
+<div class="card">
+    <h2>💬 Messagerie - {{ session.user_nom if session.user_nom else 'Vendeur' }}</h2>
+    <div id="messageResult"></div>
+    
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div style="text-align: center; color: #999; padding: 20px;">Chargement des messages...</div>
+        </div>
+        
+        <div class="chat-input">
+            <textarea id="messageInput" rows="2" placeholder="Écrivez votre message au gérant..."></textarea>
+            <button onclick="envoyerMessage()">📤 Envoyer</button>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="/dashboard_vendeur" style="background:#6c757d; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; display:inline-block;">
+            ← Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<style>
+    .chat-container {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin-top: 20px;
+    }
+    .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .message {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+    }
+    .message.vendeur {
+        align-self: flex-end;
+        background: #1e3a8a;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .message.gerant {
+        align-self: flex-start;
+        background: #e5e7eb;
+        color: #333;
+        border-bottom-left-radius: 4px;
+    }
+    .message-info {
+        font-size: 10px;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+    .chat-input {
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+    }
+    .chat-input textarea {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        resize: none;
+        font-family: inherit;
+    }
+    .chat-input button {
+        background: #1e3a8a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+    .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin-bottom: 20px; text-align: center; }
+</style>
+
+<script>
+    let vendeurNom = sessionStorage.getItem('user_nom') || "{{ session.user_nom }}";
+    let boutique_id = {{ session.boutique_id }};
+    
+    function chargerMessages() {
+        fetch(`/api/get_messages_vendeur?vendeur=${encodeURIComponent(vendeurNom)}&boutique_id=${boutique_id}`)
+            .then(response => response.json())
+            .then(messages => {
+                var container = document.getElementById('chatMessages');
+                if (!messages || messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">📭 Aucun message</div>';
+                    return;
+                }
+                var html = '';
+                messages.forEach(function(m) {
+                    var estVendeur = (m.expediteur === vendeurNom);
+                    var classe = estVendeur ? 'vendeur' : 'gerant';
+                    var nom = estVendeur ? 'Moi' : (m.expediteur || 'Gérant');
+                    html += '<div class="message ' + classe + '">';
+                    html += '<div><strong>' + nom + '</strong></div>';
+                    html += '<div>' + (m.message || '') + '</div>';
+                    html += '<div class="message-info">' + (m.heure || '') + ' ' + (m.date || '') + '</div>';
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+            });
+    }
+    
+    function envoyerMessage() {
+        var message = document.getElementById('messageInput').value.trim();
+        if (!message) return;
+        
+        fetch('/api/envoyer_message_vendeur', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                boutique_id: boutique_id,
+                expediteur: vendeurNom,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('messageInput').value = '';
+                chargerMessages();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        });
+    }
+    
+    chargerMessages();
+    setInterval(chargerMessages, 10000);
+</script>

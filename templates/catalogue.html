@@ -1,0 +1,157 @@
+<div class="card">
+  <h2>📋 Catalogue des produits</h2>
+  <div id="catalogueMessage"></div>
+  
+  <div style="margin: 20px 0; display: flex; gap: 10px;">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher un produit..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+    <button onclick="rechercherProduit()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px;">🔍</button>
+    <button onclick="reinitialiserRecherche()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px;">❌</button>
+  </div>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Produit</th><th>Catégorie</th><th>Prix achat</th><th>Prix vente</th><th>Stock</th><th>Seuil</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="catalogueBody">
+        <tr><td colspan="8">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div style="margin-top: 20px; display: flex; gap: 10px;">
+    <button onclick="ouvrirModalAjout()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px;">➕ Ajouter</button>
+    <button onclick="chargerCatalogue()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Actualiser</button>
+  </div>
+</div>
+
+<!-- Modal Ajout -->
+<div id="modalAjout" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:25px; border-radius:20px; width:90%; max-width:500px;">
+    <h3>➕ Ajouter un produit</h3>
+    <input type="text" id="modalNom" placeholder="Nom *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <input type="text" id="modalCategorie" placeholder="Catégorie" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <input type="number" id="modalPrixAchat" placeholder="Prix achat *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <input type="number" id="modalPrixVente" placeholder="Prix vente *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <input type="number" id="modalStock" placeholder="Stock initial" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <input type="number" id="modalSeuil" placeholder="Seuil alerte" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button onclick="ajouterProduit()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px;">✅ Ajouter</button>
+      <button onclick="fermerModalAjout()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px;">❌ Annuler</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 20px; max-height: 500px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #1e3a8a; color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+  tr:hover { background: #f5f5f5; }
+</style>
+
+<script>
+  let tousProduits = [];
+  
+  function chargerCatalogue() {
+    fetch('/api/getCatalogueComplet')
+      .then(response => response.json())
+      .then(data => {
+        tousProduits = data;
+        afficherCatalogue(data);
+      })
+      .catch(error => console.error('Erreur:', error));
+  }
+  
+  function afficherCatalogue(produits) {
+    var tbody = document.getElementById('catalogueBody');
+    tbody.innerHTML = '';
+    
+    if (!produits || produits.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8">Aucun produit</td></tr>';
+      return;
+    }
+    
+    produits.forEach(function(p) {
+      var row = tbody.insertRow();
+      row.insertCell(0).textContent = p.id || '-';
+      row.insertCell(1).innerHTML = '<strong>' + (p.nom || '-') + '</strong>';
+      row.insertCell(2).textContent = p.categorie || '-';
+      row.insertCell(3).textContent = (p.prixAchat || 0).toLocaleString() + ' FCFA';
+      row.insertCell(4).innerHTML = '<span style="color:#28a745; font-weight:bold;">' + (p.prixVente || 0).toLocaleString() + ' FCFA</span>';
+      row.insertCell(5).textContent = (p.stock || 0).toLocaleString();
+      row.insertCell(6).textContent = p.seuil || 0;
+      
+      var btnSuppr = document.createElement('button');
+      btnSuppr.textContent = '🗑️';
+      btnSuppr.style = 'background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;';
+      btnSuppr.onclick = (function(nom) { return function() { supprimerProduit(nom); }; })(p.nom);
+      row.insertCell(7).appendChild(btnSuppr);
+    });
+  }
+  
+  function rechercherProduit() {
+    var terme = document.getElementById('searchInput').value.toLowerCase();
+    if (!terme) {
+      afficherCatalogue(tousProduits);
+      return;
+    }
+    var filtres = tousProduits.filter(function(p) {
+      return (p.nom && p.nom.toLowerCase().includes(terme)) ||
+             (p.categorie && p.categorie.toLowerCase().includes(terme));
+    });
+    afficherCatalogue(filtres);
+  }
+  
+  function reinitialiserRecherche() {
+    document.getElementById('searchInput').value = '';
+    afficherCatalogue(tousProduits);
+  }
+  
+  function ouvrirModalAjout() {
+    document.getElementById('modalAjout').style.display = 'flex';
+  }
+  
+  function fermerModalAjout() {
+    document.getElementById('modalAjout').style.display = 'none';
+  }
+  
+  function ajouterProduit() {
+    var produit = {
+      nom: document.getElementById('modalNom').value,
+      categorie: document.getElementById('modalCategorie').value,
+      prixAchat: parseFloat(document.getElementById('modalPrixAchat').value),
+      prixVente: parseFloat(document.getElementById('modalPrixVente').value),
+      stock: parseInt(document.getElementById('modalStock').value) || 0,
+      seuil: parseInt(document.getElementById('modalSeuil').value) || 10
+    };
+    
+    fetch('/api/ajouterProduitWeb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(produit)
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data);
+      fermerModalAjout();
+      chargerCatalogue();
+    });
+  }
+  
+  function supprimerProduit(nom) {
+    if (!confirm('Supprimer "' + nom + '" ?')) return;
+    fetch('/api/supprimerProduitWeb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom: nom })
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data);
+      chargerCatalogue();
+    });
+  }
+  
+  chargerCatalogue();
+</script>

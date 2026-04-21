@@ -1,0 +1,44 @@
+{
+  "produits": [
+    {
+      "id": "PROD_001",
+      "nom": "Produit Test A",
+      "categorie": "Électronique",
+      "prixAchat": 500,
+      "prixVente": 1000,
+      "stock": 100,
+      "seuil": 10
+    },
+    {
+      "id": "PROD_002",
+      "nom": "Produit Test B",
+      "categorie": "Accessoires",
+      "prixAchat": 250,
+      "prixVente": 500,
+      "stock": 50,
+      "seuil": 5
+    },
+    {
+      "id": "PROD_003",
+      "nom": "Produit Test C",
+      "categorie": "Consommables",
+      "prixAchat": 100,
+      "prixVente": 200,
+      "stock": 200,
+      "seuil": 20
+    }
+  ],
+  "ventes": [],
+  "journal": [],
+  "utilisateurs": [
+    {
+      "id": 1,
+      "username": "vendeur1",
+      "password": "569dba69daa0e283c3a5498adc2011f7830fab26074ca7eebc7cc47c5e4b9493",
+      "role": "vendeur",
+      "nom": "Vendeur Test",
+      "actif": true
+    }
+  ],
+  "messages": []
+}

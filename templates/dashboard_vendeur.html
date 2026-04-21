@@ -1,0 +1,16 @@
+<div class="card">
+    <h2>🏪 Bienvenue {{ session.user_nom }}</h2>
+    <div class="menu">
+        <a href="/vente_boutique">💰 Vente</a>
+        <a href="/caisse_journaliere">📊 Caisse</a>
+        <a href="/messages_vendeur">💬 Messages</a>
+        <a href="/deconnexion">🔓 Déconnexion</a>
+    </div>
+</div>
+
+<style>
+    .card { max-width: 600px; margin: 50px auto; text-align: center; }
+    .menu { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+    .menu a { background: #1e3a8a; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold; }
+    .menu a:hover { background: #2563eb; }
+</style>

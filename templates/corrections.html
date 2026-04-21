@@ -1,0 +1,404 @@
+<div class="card">
+    <!-- En-tête avec bouton retour -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h2>🔄 Corrections des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
+            ← Retour
+        </a>
+    </div>
+    
+    <div id="correctionMessage"></div>
+    
+    <div style="margin-bottom: 20px;">
+        <input type="text" id="searchCorrection" placeholder="🔍 Rechercher un produit ou vendeur..." style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onkeyup="filtrerVentes()">
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix vendu</th><th>Total</th><th>Vendeur</th><th>Statut</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="correctionBody">
+                <tr><td colspan="9">Chargement...<\/td><\/tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL CORRECTION -->
+<div id="modalCorrection" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:550px; max-height:90%; overflow-y:auto;">
+        <h2 style="margin-bottom:20px; color:#1e3a8a;">🔄 Correction de la vente</h2>
+        <div id="correctionInfo" style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:20px;"></div>
+        
+        <div class="options-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div class="option-card" onclick="selectionnerAction('annulation')" id="optAnnulation" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
+                <div style="font-size:24px;">🗑️</div>
+                <div><strong>Annuler</strong></div>
+                <div style="font-size:11px; color:#666;">Annuler toute la vente</div>
+            </div>
+            <div class="option-card" onclick="selectionnerAction('correctionPrix')" id="optCorrectionPrix" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
+                <div style="font-size:24px;">✏️</div>
+                <div><strong>Corriger prix</strong></div>
+                <div style="font-size:11px; color:#666;">Modifier le prix de vente</div>
+            </div>
+            <div class="option-card" onclick="selectionnerAction('correctionQuantite')" id="optCorrectionQuantite" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
+                <div style="font-size:24px;">🔢</div>
+                <div><strong>Corriger quantité</strong></div>
+                <div style="font-size:11px; color:#666;">Modifier la quantité vendue</div>
+            </div>
+            <div class="option-card" onclick="selectionnerAction('remboursement')" id="optRemboursement" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
+                <div style="font-size:24px;">💰</div>
+                <div><strong>Remboursement</strong></div>
+                <div style="font-size:11px; color:#666;">Rembourser partiellement</div>
+            </div>
+        </div>
+        
+        <!-- Formulaire Annulation -->
+        <div id="formAnnulation" style="display:none;">
+            <div class="form-group">
+                <label>Motif</label>
+                <input type="text" id="motifAnnulation" placeholder="Ex: Client annulé" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="info-box" style="background:#fefce8; padding:15px; border-radius:12px; margin-top:10px;">
+                <p><strong>💰 Montant à annuler :</strong> <span id="montantAnnulation">0</span> FCFA</p>
+                <p><strong>📦 Stock restauré :</strong> +<span id="stockRestaure">0</span> unités</p>
+            </div>
+        </div>
+        
+        <!-- Formulaire Correction Prix -->
+        <div id="formCorrectionPrix" style="display:none;">
+            <div class="form-group">
+                <label>Ancien prix (FCFA)</label>
+                <input type="text" id="ancienPrix" readonly style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>Nouveau prix (FCFA)</label>
+                <input type="number" id="nouveauPrix" step="1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="form-group">
+                <label>Motif</label>
+                <input type="text" id="motifPrix" placeholder="Ex: Erreur de saisie" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="info-box" style="background:#e0e7ff; padding:15px; border-radius:12px; margin-top:10px;">
+                <p><strong>📊 Différence :</strong> <span id="diffPrix">0</span> FCFA</p>
+            </div>
+        </div>
+        
+        <!-- Formulaire Correction Quantité -->
+        <div id="formCorrectionQuantite" style="display:none;">
+            <div class="form-group">
+                <label>Ancienne quantité</label>
+                <input type="text" id="ancienneQuantite" readonly style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>Nouvelle quantité</label>
+                <input type="number" id="nouvelleQuantite" min="1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="form-group">
+                <label>Motif</label>
+                <input type="text" id="motifQuantite" placeholder="Ex: Erreur de comptage" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="info-box" style="background:#e0e7ff; padding:15px; border-radius:12px; margin-top:10px;">
+                <p><strong>📊 Nouveau total :</strong> <span id="nouveauTotal">0</span> FCFA</p>
+            </div>
+        </div>
+        
+        <!-- Formulaire Remboursement -->
+        <div id="formRemboursement" style="display:none;">
+            <div class="form-group">
+                <label>Montant à rembourser (FCFA)</label>
+                <input type="number" id="montantRemboursement" step="1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="form-group">
+                <label>Motif</label>
+                <input type="text" id="motifRemboursement" placeholder="Ex: Produit défectueux" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div class="info-box" style="background:#fefce8; padding:15px; border-radius:12px; margin-top:10px;">
+                <p><strong>💰 Montant original :</strong> <span id="montantOriginal">0</span> FCFA</p>
+                <p><strong>💵 Reste à payer :</strong> <span id="resteAPayer">0</span> FCFA</p>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="validerCorrection()" style="flex:1; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">✅ Valider</button>
+            <button onclick="fermerModalCorrection()" style="flex:1; background:#6c757d; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">❌ Annuler</button>
+        </div>
+        <div id="correctionError" class="error-msg" style="margin-top:15px; display:none; background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;"></div>
+    </div>
+</div>
+
+<style>
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 500px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 1300px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin: 0; }
+    .option-card:hover { border-color: #1e3a8a; background: #f0f4ff; transform: translateY(-2px); }
+    .option-card.selected { border-color: #1e3a8a; background: #e0e7ff; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+    .statut-annule { color: #dc3545; font-weight: bold; }
+    .statut-actif { color: #28a745; font-weight: bold; }
+    @media (max-width: 768px) {
+        .options-grid { grid-template-columns: repeat(2, 1fr); }
+        .card h2 { font-size: 18px; }
+        th, td { font-size: 12px; padding: 6px; }
+    }
+</style>
+
+<script>
+    let toutesVentes = [];
+    let venteSelectionnee = null;
+    let actionSelectionnee = null;
+    
+    function chargerVentes() {
+        fetch('/api/get_historique_ventes')
+            .then(response => response.json())
+            .then(data => {
+                toutesVentes = data;
+                afficherVentes(data);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('correctionBody').innerHTML = '<tr><td colspan="9">Erreur de chargement<\/td><\/tr>';
+            });
+    }
+    
+    function afficherVentes(ventes) {
+        var tbody = document.getElementById('correctionBody');
+        tbody.innerHTML = '';
+        if (!ventes || ventes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9">Aucune vente<\/td><\/tr>';
+            return;
+        }
+        
+        ventes.forEach(function(v) {
+            var row = tbody.insertRow();
+            row.insertCell(0).textContent = v.date || '';
+            row.insertCell(1).textContent = v.heure || '';
+            row.insertCell(2).innerHTML = '<strong>' + (v.produit || '') + '</strong>';
+            row.insertCell(3).textContent = v.quantite || 0;
+            row.insertCell(4).textContent = (v.prix_vendu || 0).toLocaleString('fr-FR') + ' FCFA';
+            row.insertCell(5).innerHTML = '<strong>' + (v.total || 0).toLocaleString('fr-FR') + ' FCFA</strong>';
+            row.insertCell(6).textContent = v.vendeur || '';
+            
+            // Statut
+            var estAnnulee = v.statut === 'ANNULÉE';
+            var statutHtml = estAnnulee ? '<span class="statut-annule">❌ ANNULÉE</span>' : '<span class="statut-actif">✅ ACTIVE</span>';
+            row.insertCell(7).innerHTML = statutHtml;
+            
+            // Bouton Action
+            var btn = document.createElement('button');
+            if (estAnnulee) {
+                btn.textContent = '🔒 Déjà annulée';
+                btn.style = 'background:#6c757d; color:white; border:none; border-radius:5px; padding:5px 12px; cursor:not-allowed;';
+                btn.disabled = true;
+            } else {
+                btn.textContent = '🔄 Corriger';
+                btn.style = 'background:#ff9800; color:white; border:none; border-radius:5px; padding:5px 12px; cursor:pointer;';
+                btn.onclick = (function(vente) { return function() { ouvrirCorrection(vente); }; })(v);
+            }
+            row.insertCell(8).appendChild(btn);
+        });
+    }
+    
+    function filtrerVentes() {
+        var terme = document.getElementById('searchCorrection').value.toLowerCase();
+        if (!terme) { afficherVentes(toutesVentes); return; }
+        var filtres = toutesVentes.filter(v => 
+            (v.produit && v.produit.toLowerCase().includes(terme)) ||
+            (v.vendeur && v.vendeur.toLowerCase().includes(terme))
+        );
+        afficherVentes(filtres);
+    }
+    
+    function ouvrirCorrection(vente) {
+        if (vente.statut === 'ANNULÉE') {
+            alert('Cette vente a déjà été annulée');
+            return;
+        }
+        
+        venteSelectionnee = vente;
+        
+        document.getElementById('correctionInfo').innerHTML = `
+            <p><strong>📦 Produit:</strong> ${escapeHtml(vente.produit)}</p>
+            <p><strong>🔢 Quantité:</strong> ${vente.quantite || 0}</p>
+            <p><strong>💰 Prix vendu:</strong> ${(vente.prix_vendu || 0).toLocaleString('fr-FR')} FCFA</p>
+            <p><strong>💵 Total:</strong> ${(vente.total || 0).toLocaleString('fr-FR')} FCFA</p>
+            <p><strong>👤 Vendeur:</strong> ${escapeHtml(vente.vendeur || '')}</p>
+            <p><strong>📅 Date:</strong> ${vente.date || ''} ${vente.heure || ''}</p>
+        `;
+        
+        document.getElementById('montantAnnulation').innerHTML = (vente.total || 0).toLocaleString('fr-FR');
+        document.getElementById('stockRestaure').innerHTML = vente.quantite || 0;
+        document.getElementById('ancienPrix').value = vente.prix_vendu || 0;
+        document.getElementById('ancienneQuantite').value = vente.quantite || 0;
+        document.getElementById('montantOriginal').innerHTML = (vente.total || 0).toLocaleString('fr-FR');
+        document.getElementById('montantRemboursement').value = '';
+        
+        document.getElementById('modalCorrection').style.display = 'flex';
+        selectionnerAction(null);
+    }
+    
+    function selectionnerAction(action) {
+        actionSelectionnee = action;
+        
+        document.querySelectorAll('.option-card').forEach(opt => {
+            opt.classList.remove('selected');
+            opt.style.borderColor = '#e0e0e0';
+        });
+        
+        document.getElementById('formAnnulation').style.display = 'none';
+        document.getElementById('formCorrectionPrix').style.display = 'none';
+        document.getElementById('formCorrectionQuantite').style.display = 'none';
+        document.getElementById('formRemboursement').style.display = 'none';
+        
+        if (action) {
+            let optId = '', formId = '';
+            
+            switch(action) {
+                case 'annulation':
+                    optId = 'optAnnulation';
+                    formId = 'formAnnulation';
+                    break;
+                case 'correctionPrix':
+                    optId = 'optCorrectionPrix';
+                    formId = 'formCorrectionPrix';
+                    break;
+                case 'correctionQuantite':
+                    optId = 'optCorrectionQuantite';
+                    formId = 'formCorrectionQuantite';
+                    break;
+                case 'remboursement':
+                    optId = 'optRemboursement';
+                    formId = 'formRemboursement';
+                    break;
+            }
+            
+            const optEl = document.getElementById(optId);
+            if (optEl) {
+                optEl.classList.add('selected');
+                optEl.style.borderColor = '#1e3a8a';
+            }
+            
+            const formEl = document.getElementById(formId);
+            if (formEl) formEl.style.display = 'block';
+        }
+    }
+    
+    function fermerModalCorrection() {
+        document.getElementById('modalCorrection').style.display = 'none';
+        venteSelectionnee = null;
+        actionSelectionnee = null;
+        document.getElementById('correctionError').style.display = 'none';
+    }
+    
+    function validerCorrection() {
+        if (!venteSelectionnee || !actionSelectionnee) {
+            afficherErreurCorrection('Sélectionnez une action');
+            return;
+        }
+        
+        var data = {
+            id: venteSelectionnee.id,
+            action: actionSelectionnee,
+            produit: venteSelectionnee.produit,
+            quantite: venteSelectionnee.quantite,
+            prix_vendu: venteSelectionnee.prix_vendu,
+            total: venteSelectionnee.total,
+            vendeur: venteSelectionnee.vendeur,
+            date: venteSelectionnee.date
+        };
+        
+        switch(actionSelectionnee) {
+            case 'annulation':
+                data.motif = document.getElementById('motifAnnulation').value || 'Annulation client';
+                if (!confirm(`Annuler la vente de ${data.produit} ?\nMontant: ${data.total.toLocaleString('fr-FR')} FCFA`)) return;
+                break;
+            case 'correctionPrix':
+                data.nouveauPrix = parseFloat(document.getElementById('nouveauPrix').value);
+                data.motif = document.getElementById('motifPrix').value || 'Correction prix';
+                if (!data.nouveauPrix || data.nouveauPrix <= 0) {
+                    afficherErreurCorrection('Nouveau prix valide requis');
+                    return;
+                }
+                if (!confirm(`Corriger le prix de ${data.prix_vendu} à ${data.nouveauPrix} FCFA ?`)) return;
+                break;
+            case 'correctionQuantite':
+                data.nouvelleQuantite = parseInt(document.getElementById('nouvelleQuantite').value);
+                data.motif = document.getElementById('motifQuantite').value || 'Correction quantité';
+                if (!data.nouvelleQuantite || data.nouvelleQuantite <= 0) {
+                    afficherErreurCorrection('Nouvelle quantité valide requise');
+                    return;
+                }
+                if (!confirm(`Corriger la quantité de ${data.quantite} à ${data.nouvelleQuantite} ?`)) return;
+                break;
+            case 'remboursement':
+                data.montantRemboursement = parseFloat(document.getElementById('montantRemboursement').value);
+                data.motif = document.getElementById('motifRemboursement').value || 'Remboursement client';
+                if (!data.montantRemboursement || data.montantRemboursement <= 0) {
+                    afficherErreurCorrection('Montant de remboursement valide requis');
+                    return;
+                }
+                if (data.montantRemboursement > data.total) {
+                    afficherErreurCorrection('Le montant ne peut pas dépasser le total de la vente');
+                    return;
+                }
+                if (!confirm(`Rembourser ${data.montantRemboursement.toLocaleString('fr-FR')} FCFA ?`)) return;
+                break;
+        }
+        
+        fetch('/api/traiter_correction_vente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                document.getElementById('correctionMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">✅ ' + result.message + '</div>';
+                fermerModalCorrection();
+                chargerVentes(); // Recharge la liste
+                setTimeout(() => { document.getElementById('correctionMessage').innerHTML = ''; }, 3000);
+            } else {
+                afficherErreurCorrection('❌ ' + result.error);
+            }
+        });
+    }
+    
+    function afficherErreurCorrection(message) {
+        var errorDiv = document.getElementById('correctionError');
+        errorDiv.innerHTML = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+    }
+    
+    // Mise à jour dynamique
+    document.getElementById('nouveauPrix').addEventListener('input', function() {
+        var diff = this.value - (venteSelectionnee?.prix_vendu || 0);
+        document.getElementById('diffPrix').innerHTML = diff.toLocaleString('fr-FR');
+    });
+    
+    document.getElementById('nouvelleQuantite').addEventListener('input', function() {
+        var nouveauTotal = this.value * (venteSelectionnee?.prix_vendu || 0);
+        document.getElementById('nouveauTotal').innerHTML = nouveauTotal.toLocaleString('fr-FR') + ' FCFA';
+    });
+    
+    document.getElementById('montantRemboursement').addEventListener('input', function() {
+        var reste = (venteSelectionnee?.total || 0) - (this.value || 0);
+        document.getElementById('resteAPayer').innerHTML = reste.toLocaleString('fr-FR') + ' FCFA';
+    });
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+    
+    chargerVentes();
+</script>
