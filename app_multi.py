@@ -7,7 +7,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 from datetime import datetime, timedelta
 import hashlib
-
+import os
+import json
 
 # ========== CONFIGURATION EMAIL ==========
 # Remplace par tes infos perso
@@ -21,7 +22,12 @@ app.secret_key = 'gbutik_multi_secret_2024'
 SPREADSHEET_ID = "1TEluEvR3o-cWtVCQkueZFucHkLQzbhgtplmw7ZfVZLU"
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+
+if os.path.exists('credentials.json'):
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+else:
+    creds_dict = json.loads(os.environ.get('GOOGLE_CREDENTIALS', '{}'))
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 spreadsheet = client.open_by_key(SPREADSHEET_ID)
 
