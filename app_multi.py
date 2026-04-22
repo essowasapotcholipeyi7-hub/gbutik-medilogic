@@ -1338,7 +1338,7 @@ def api_connexion_vendeur():
 # ========== ADMIN GLOBAL (RESERVE AU CONCEPTEUR) ==========
 
 # Mot de passe admin global (change-le)
-ADMIN_GLOBAL_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+ADMIN_GLOBAL_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
 @app.route('/admin_global')
 def admin_global():
