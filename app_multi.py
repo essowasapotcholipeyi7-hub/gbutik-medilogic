@@ -411,20 +411,37 @@ def api_ajouter_produit():
     ]
     catalogue_sheet.append_row(row_catalogue)
     
-    # 2. Ajouter au stock (même produit)
+    # 2. Ajouter au stock
     stock_sheet = get_sheet(boutique_id, 'stock')
     if stock_sheet:
         row_stock = [
-            new_id,                    # id
-            data.get('nom'),           # produit
-            data.get('stock'),         # stockActuel
-            data.get('seuil'),         # seuil
-            ''                         # dernierMouvement
+            new_id, 
+            data.get('nom'), 
+            data.get('stock'), 
+            data.get('seuil'), 
+            ''
         ]
         stock_sheet.append_row(row_stock)
-        print(f"✅ Produit ajouté au stock: {data.get('nom')}")
+    
+    # 3. 🔔 ENREGISTRER DANS LE JOURNAL
+    journal_sheet = get_sheet(boutique_id, 'journal')
+    if journal_sheet:
+        journal_row = [
+            datetime.now().strftime('%d/%m/%Y'),
+            datetime.now().strftime('%H:%M:%S'),
+            'AJOUT_CATALOGUE',
+            data.get('nom'),
+            data.get('stock'),
+            0,
+            data.get('stock'),
+            session.get('user_nom', 'Gérant'),
+            f"Ajout produit: {data.get('nom')} | Prix: {data.get('prixVente')} FCFA"
+        ]
+        journal_sheet.append_row(journal_row)
+        print(f"✅ Journal: Ajout produit {data.get('nom')}")
     
     return jsonify({'success': True, 'message': 'Produit ajouté au catalogue et au stock'})
+
 
 @app.route('/api/valider_vente', methods=['POST'])
 def api_valider_vente():
