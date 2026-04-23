@@ -1787,6 +1787,49 @@ def api_supprimer_produit():
         print(f"❌ Erreur suppression: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/admin_reset_password', methods=['POST'])
+def admin_reset_password():
+    if session.get('admin_global') != True:
+        return jsonify({'error': 'Non autorisé'})
+    
+    data = request.get_json()
+    email = data.get('email')
+    role = data.get('role', 'boutique')  # 'boutique' ou 'vendeur'
+    nouveau_mdp = data.get('nouveau_mdp')
+    
+    if not email or not nouveau_mdp:
+        return jsonify({'success': False, 'error': 'Email et nouveau mot de passe requis'})
+    
+    if len(nouveau_mdp) < 4:
+        return jsonify({'success': False, 'error': 'Le mot de passe doit contenir au moins 4 caractères'})
+    
+    if role == 'boutique':
+        # Réinitialiser mot de passe d'une boutique
+        sheet = spreadsheet.worksheet("BOUTIQUES")
+        all_data = sheet.get_all_values()
+        
+        for i in range(1, len(all_data)):
+            if len(all_data[i]) > 2 and all_data[i][2] == email:
+                sheet.update_cell(i+1, 4, hash_password(nouveau_mdp))
+                return jsonify({'success': True, 'message': f'Mot de passe de la boutique "{all_data[i][1]}" réinitialisé à: {nouveau_mdp}'})
+        
+        return jsonify({'success': False, 'error': 'Boutique non trouvée'})
+    
+    elif role == 'vendeur':
+        # Réinitialiser mot de passe d'un vendeur (dans toutes les boutiques)
+        for boutique_id in range(1, 31):
+            sheet = get_sheet(boutique_id, 'vendeurs')
+            if sheet:
+                all_data = sheet.get_all_values()
+                for i in range(1, len(all_data)):
+                    if len(all_data[i]) > 2 and all_data[i][1] == email:
+                        sheet.update_cell(i+1, 3, hash_password(nouveau_mdp))
+                        return jsonify({'success': True, 'message': f'Mot de passe du vendeur "{all_data[i][3]}" réinitialisé à: {nouveau_mdp}'})
+        
+        return jsonify({'success': False, 'error': 'Vendeur non trouvé'})
+    
+    return jsonify({'success': False, 'error': 'Rôle invalide'})
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))

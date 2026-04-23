@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
+            background: #f5f7fb;
             padding: 20px;
         }
         .header {
@@ -32,38 +32,35 @@
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         .stat-card h3 { font-size: 32px; color: #1e3a8a; }
         .card {
             background: white;
             border-radius: 20px;
-            padding: 20px;
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        h2 { color: #1e3a8a; margin-bottom: 20px; }
+        h2 { color: #1e3a8a; margin-bottom: 20px; font-size: 20px; }
+        h3 { color: #1e3a8a; margin-bottom: 15px; font-size: 18px; }
         .table-container { overflow-x: auto; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
         td { padding: 10px; border-bottom: 1px solid #ddd; }
-        .statut-attente { background: #fff3cd; color: #856404; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
-        .statut-actif { background: #d4edda; color: #155724; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
-        .statut-refuse { background: #f8d7da; color: #721c24; font-weight: bold; padding: 4px 8px; border-radius: 12px; display: inline-block; }
         .btn-accepter { background: #28a745; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
         .btn-refuser { background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
         .btn-activer { background: #ffc107; color: #333; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
         .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; }
         .tab.active { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; }
-        .logout-btn {
-            background: #dc3545;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-        }
+        .logout-btn { background: #dc3545; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; }
         .logout-btn:hover { background: #c82333; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .error-msg { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc3545; }
+        .success-msg { background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #28a745; }
     </style>
 </head>
 <body>
@@ -102,6 +99,34 @@
         </div>
     </div>
     
+    <!-- SECTION RÉINITIALISATION DES MOTS DE PASSE -->
+    <div class="card">
+        <h2>🔐 Réinitialisation des mots de passe</h2>
+        <div id="resetMessage" style="display:none;"></div>
+        
+        <div class="form-group">
+            <label>👤 Type de compte</label>
+            <select id="resetRole" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <option value="boutique">🏪 Gérant de boutique</option>
+                <option value="vendeur">👤 Vendeur</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>📧 Email (pour gérant) / Nom d'utilisateur (pour vendeur)</label>
+            <input type="text" id="resetEmail" placeholder="ex: gerant@boutique.com ou vendeur1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        
+        <div class="form-group">
+            <label>🔑 Nouveau mot de passe</label>
+            <input type="password" id="resetNewPassword" placeholder="Nouveau mot de passe (min 4 caractères)" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        
+        <button onclick="resetPassword()" style="background:#f59e0b; color:white; border:none; border-radius:8px; padding:12px 20px; cursor:pointer; width:100%; font-weight:bold;">
+            🔄 Réinitialiser le mot de passe
+        </button>
+    </div>
+    
     <script>
         let toutesBoutiques = [];
         let ongletActuel = 'toutes';
@@ -114,7 +139,6 @@
                     let nbTotal = data.length;
                     let nbActives = data.filter(b => b.actif === 'oui').length;
                     let nbAttente = data.filter(b => b.actif === 'non').length;
-                    let nbRefusees = data.filter(b => b.actif === 'refuse').length;
                     
                     document.getElementById('nbTotal').innerHTML = nbTotal;
                     document.getElementById('nbActives').innerHTML = nbActives;
@@ -154,22 +178,19 @@
                 row.insertCell(3).textContent = b.telephone || '-';
                 row.insertCell(4).textContent = b.date || '-';
                 
-                // Statut
                 let statutHtml = '';
                 if (b.actif === 'oui') {
-                    statutHtml = '<span class="statut-actif">✅ Active</span>';
+                    statutHtml = '<span style="color:#28a745; font-weight:bold;">✅ Active</span>';
                 } else if (b.actif === 'non') {
-                    statutHtml = '<span class="statut-attente">⏳ En attente</span>';
+                    statutHtml = '<span style="color:#f59e0b; font-weight:bold;">⏳ En attente</span>';
                 } else {
-                    statutHtml = '<span class="statut-refuse">❌ Refusée</span>';
+                    statutHtml = '<span style="color:#dc3545; font-weight:bold;">❌ Refusée</span>';
                 }
                 row.insertCell(5).innerHTML = statutHtml;
                 
-                // Actions
                 let actionCell = row.insertCell(6);
                 
                 if (b.actif === 'non') {
-                    // Boutique en attente
                     let btnAccepter = document.createElement('button');
                     btnAccepter.textContent = '✅ Accepter';
                     btnAccepter.className = 'btn-accepter';
@@ -186,16 +207,14 @@
                     })(b.email);
                     actionCell.appendChild(btnRefuser);
                 } else if (b.actif === 'oui') {
-                    // Boutique active
                     let btnDesactiver = document.createElement('button');
                     btnDesactiver.textContent = '🔒 Désactiver';
                     btnDesactiver.className = 'btn-refuser';
                     btnDesactiver.onclick = (function(email) {
-                        return function() { desactiverBoutique(email); };
+                        return function() { traiterDemande(email, 'refuser'); };
                     })(b.email);
                     actionCell.appendChild(btnDesactiver);
                 } else {
-                    // Boutique refusée
                     let btnReactiver = document.createElement('button');
                     btnReactiver.textContent = '🔄 Réactiver';
                     btnReactiver.className = 'btn-activer';
@@ -227,35 +246,64 @@
             }
         }
         
-        function desactiverBoutique(email) {
-            if (confirm('Voulez-vous vraiment désactiver cette boutique ?')) {
-                fetch('/api/admin_valider_boutique', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, action: 'refuser' })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        chargerBoutiques();
-                    } else {
-                        alert('Erreur: ' + data.error);
-                    }
-                });
-            }
-        }
-        
         function changerOnglet(onglet) {
             ongletActuel = onglet;
-            
-            // Mettre à jour l'apparence des onglets
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
-            
             afficherBoutiques();
+        }
+        
+        // Fonction pour réinitialiser le mot de passe
+        function resetPassword() {
+            var role = document.getElementById('resetRole').value;
+            var email = document.getElementById('resetEmail').value;
+            var nouveauMdp = document.getElementById('resetNewPassword').value;
+            var messageDiv = document.getElementById('resetMessage');
+            
+            if (!email || !nouveauMdp) {
+                messageDiv.innerHTML = '<div class="error-msg">❌ Veuillez remplir tous les champs</div>';
+                messageDiv.style.display = 'block';
+                setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
+                return;
+            }
+            
+            if (nouveauMdp.length < 4) {
+                messageDiv.innerHTML = '<div class="error-msg">❌ Le mot de passe doit contenir au moins 4 caractères</div>';
+                messageDiv.style.display = 'block';
+                setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
+                return;
+            }
+            
+            messageDiv.innerHTML = '<div class="success-msg">⏳ Traitement en cours...</div>';
+            messageDiv.style.display = 'block';
+            
+            fetch('/api/admin_reset_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: email, 
+                    role: role, 
+                    nouveau_mdp: nouveauMdp 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.innerHTML = '<div class="success-msg">✅ ' + data.message + '</div>';
+                    document.getElementById('resetEmail').value = '';
+                    document.getElementById('resetNewPassword').value = '';
+                    setTimeout(() => { messageDiv.style.display = 'none'; }, 5000);
+                } else {
+                    messageDiv.innerHTML = '<div class="error-msg">❌ ' + data.error + '</div>';
+                    setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
+                }
+            })
+            .catch(error => {
+                messageDiv.innerHTML = '<div class="error-msg">❌ Erreur: ' + error.message + '</div>';
+                setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
+            });
         }
         
         chargerBoutiques();
