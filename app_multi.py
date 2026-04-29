@@ -59,7 +59,7 @@ def get_boutique_by_email(email):
         pass
     return None
 
-def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse, proprietaire_complet):
+def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse):
     """Envoie un email à l'admin pour demander validation"""
     try:
         sujet = f"🆕 DEMANDE VALIDATION - Nouvelle boutique: {nom_boutique}"
@@ -89,13 +89,12 @@ def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse, p
                     <div class="info">
                         <p><strong>📅 Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
                         <p><strong>🏪 Nom :</strong> {nom_boutique}</p>
-                        <p><strong>👤 Propriétaire :</strong> {proprietaire}</p>
                         <p><strong>📧 Email gérant :</strong> {email_gerant}</p>
                         <p><strong>📞 Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
                         <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
                     </div>
                     <p style="text-align: center;">
-                        <a href="https://gbutik-medilogic.onrender.com/admin_global" class="button">👑 Aller à l'Admin Global</a>
+                        <a href="http://127.0.0.1:5000/admin_global" class="button">👑 Aller à l'Admin Global</a>
                     </p>
                     <p>Connecte-toi à l'Admin Global pour <strong>activer</strong> ou <strong>refuser</strong> cette boutique.</p>
                 </div>
@@ -125,7 +124,7 @@ def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse, p
         print(f"❌ Erreur envoi email: {e}")
         return False
 
-def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse, proprietaire_complet):
+def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse):
     """Envoie un email au concepteur quand une nouvelle boutique s'inscrit"""
     try:
         sujet = f"🆕 NOUVELLE BOUTIQUE - {nom_boutique}"
@@ -155,7 +154,6 @@ def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse
                     <div class="info">
                         <p><strong>📅 Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
                         <p><strong>🏪 Nom :</strong> {nom_boutique}</p>
-                        <p><strong>👤 Propriétaire :</strong> {proprietaire}</p>
                         <p><strong>📧 Email :</strong> {email_gerant}</p>
                         <p><strong>📞 Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
                         <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
@@ -191,7 +189,7 @@ def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse
         print(f"❌ Erreur email: {e}")
         return False
 
-def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, proprietaire_prenom):
+def creer_boutique(nom, email, password, telephone, adresse):
     try:
         sheet = spreadsheet.worksheet("BOUTIQUES")
         data = sheet.get_all_values()
@@ -215,118 +213,17 @@ def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, p
                 worksheet = spreadsheet.add_worksheet(title=nom_onglet, rows=1000, cols=20)
                 worksheet.append_row(headers[onglet])
         
-        # Nom complet du propriétaire
-        proprietaire_complet = f"{proprietaire_nom} {proprietaire_prenom}".strip()
-        
-        # ✅ Ligne avec le propriétaire dans la colonne I (index 8)
-        row = [
-            new_id,                              # A: ID
-            nom,                                 # B: Nom de la boutique
-            email,                               # C: Email
-            hash_password(password),             # D: Mot de passe
-            telephone,                           # E: Téléphone
-            adresse,                             # F: Adresse
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), # G: Date inscription
-            'non',                               # H: Statut (non = en attente)
-            proprietaire_complet                 # I: Nom du propriétaire
-        ]
+        # actif = 'non' par défaut (en attente de validation)
+        row = [new_id, nom, email, hash_password(password), telephone, adresse, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'non']
         sheet.append_row(row)
         
         # Envoyer une demande de validation à l'admin
-        envoyer_demande_validation(nom, email, telephone, adresse, proprietaire_complet)
+        envoyer_demande_validation(nom, email, telephone, adresse)
         
         return {'success': True, 'id': new_id, 'message': 'Demande envoyée. En attente de validation par l\'administrateur.'}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-@app.route('/api/inscrire_boutique', methods=['POST'])
-def api_inscrire_boutique():
-    try:
-        data = request.get_json()
-        
-        nom_boutique = data.get('nom_boutique')
-        proprietaire_nom = data.get('proprietaire_nom')
-        proprietaire_prenom = data.get('proprietaire_prenom')
-        email = data.get('email')
-        password = data.get('password')
-        telephone = data.get('telephone', '')
-        adresse = data.get('adresse', '')
-        
-        print(f"📝 Nouvelle inscription - Boutique: {nom_boutique}, Email: {email}")
-        
-        # Vérifications
-        if not nom_boutique or not proprietaire_nom or not proprietaire_prenom or not email or not password:
-            return jsonify({'success': False, 'error': 'Tous les champs obligatoires doivent être remplis'})
-        
-        if len(password) < 8:
-            return jsonify({'success': False, 'error': 'Le mot de passe doit contenir au moins 8 caractères'})
-        
-        # Vérifier si l'email existe déjà dans BOUTIQUES
-        try:
-            sheet_boutiques = spreadsheet.worksheet("BOUTIQUES")
-            all_boutiques = sheet_boutiques.get_all_values()
-            
-            for i in range(1, len(all_boutiques)):
-                if len(all_boutiques[i]) > 2 and all_boutiques[i][2] == email:
-                    return jsonify({'success': False, 'error': 'Cet email est déjà utilisé'})
-        except Exception as e:
-            print(f"⚠️ Erreur vérification BOUTIQUES: {e}")
-            # Si la feuille n'existe pas, on la crée
-            sheet_boutiques = spreadsheet.add_worksheet(title="BOUTIQUES", rows=1000, cols=20)
-            sheet_boutiques.append_row(['ID', 'Nom', 'Email', 'Mot de passe', 'Téléphone', 'Adresse', 'Date inscription', 'Statut', 'Propriétaire'])
-        
-        # Nouvel ID
-        all_boutiques = sheet_boutiques.get_all_values()
-        new_id = len(all_boutiques)
-        
-        # Nom complet du propriétaire
-        proprietaire_complet = f"{proprietaire_nom} {proprietaire_prenom}".strip()
-        
-        # Créer les onglets pour cette boutique
-        onglets = ['catalogue', 'ventes', 'stock', 'journal', 'vendeurs', 'config']
-        headers = {
-            'catalogue': ['id', 'nom', 'categorie', 'prixAchat', 'prixVente', 'stock', 'seuil'],
-            'ventes': ['id', 'date', 'heure', 'produit', 'quantite', 'prixVente', 'remise', 'total', 'vendeur'],
-            'stock': ['id', 'produit', 'stockActuel', 'seuil', 'dernierMouvement'],
-            'journal': ['date', 'heure', 'type', 'produit', 'quantite', 'ancienStock', 'nouveauStock', 'utilisateur', 'details'],
-            'vendeurs': ['id', 'username', 'password', 'nom', 'actif'],
-            'config': ['parametre', 'valeur']
-        }
-        
-        for onglet in onglets:
-            nom_onglet = f"boutique{new_id}_{onglet}"
-            try:
-                worksheet = spreadsheet.worksheet(nom_onglet)
-                print(f"⚠️ {nom_onglet} existe déjà")
-            except:
-                worksheet = spreadsheet.add_worksheet(title=nom_onglet, rows=1000, cols=20)
-                worksheet.append_row(headers[onglet])
-                print(f"✅ {nom_onglet} créé")
-        
-        # Ajouter la boutique à BOUTIQUES
-        new_row = [
-            new_id,
-            nom_boutique,
-            email,
-            hash_password(password),
-            telephone,
-            adresse,
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'pending',  # statut en attente
-            proprietaire_complet
-        ]
-        sheet_boutiques.append_row(new_row)
-        
-        print(f"✅ Boutique créée: {nom_boutique} (ID: {new_id}) - Propriétaire: {proprietaire_complet}")
-        
-        # Optionnel: envoyer email de notification
-        # envoyer_notification_admin(nom_boutique, email, telephone, proprietaire_complet)
-        
-        return jsonify({'success': True, 'message': 'Boutique créée avec succès ! En attente d\'activation par l\'administrateur.'})
-        
-    except Exception as e:
-        print(f"❌ Erreur inscription: {e}")
-        return jsonify({'success': False, 'error': str(e)})
 
 # ========== ROUTES PAGES HTML ==========
 @app.route('/')
