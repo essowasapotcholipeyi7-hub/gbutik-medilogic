@@ -9,6 +9,7 @@ import hashlib
 import os
 import json
 import traceback
+import threading
 
 # ========== CONFIGURATION EMAIL ==========
 EMAIL_EXPEDITEUR = os.environ.get('EMAIL_EXPEDITEUR', '')
@@ -59,18 +60,9 @@ def get_boutique_by_email(email):
         pass
     return None
 
-def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse, proprietaire):
-    """Envoie un email à l'admin avec demande de validation"""
 
-    # 🔍 LOGS DE DEBUG
-    print(f"📧 Tentative d'envoi email...")
-    print(f"   - Expéditeur: {EMAIL_EXPEDITEUR}")
-    print(f"   - Destinataire: {EMAIL_DESTINATAIRE}")
-    print(f"   - Mot de passe présent: {'OUI' if EMAIL_MDP else 'NON'}")
-    
-    if not EMAIL_EXPEDITEUR or not EMAIL_MDP or not EMAIL_DESTINATAIRE:
-        print("❌ Configuration email incomplète !")
-        return False
+def envoyer_notification_boutique_async(nom_boutique, email_gerant, telephone, adresse, proprietaire):
+    """Version asynchrone - à appeler dans un thread"""
     try:
         sujet = f"🆕 DEMANDE VALIDATION - Nouvelle boutique: {nom_boutique}"
         
@@ -104,7 +96,7 @@ def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse
                         <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
                     </div>
                     <p style="text-align: center;">
-                        <a href="http://127.0.0.1:5000/admin_global" class="button">👑 Aller à l'Admin Global</a>
+                        <a href="https://gbutik-medilogic.onrender.com/admin_global" class="button">👑 Aller à l'Admin Global</a>
                     </p>
                     <p>Connecte-toi à l'Admin Global pour <strong>activer</strong> ou <strong>refuser</strong> cette boutique.</p>
                 </div>
@@ -134,6 +126,17 @@ def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse
         print(f"❌ Erreur envoi email: {e}")
         return False
 
+# Garde ta fonction originale comme wrapper synchrone (optionnel)
+def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse, proprietaire):
+    """Version synchrone - appelle la version async dans un thread"""
+    thread = threading.Thread(
+        target=envoyer_notification_boutique_async,
+        args=(nom_boutique, email_gerant, telephone, adresse, proprietaire)
+    )
+    thread.start()
+    print(f"📧 Envoi email en arrière-plan pour {nom_boutique}")
+    return True  # On retourne immédiatement
+
 
 def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, proprietaire_prenom):
     try:
@@ -141,48 +144,28 @@ def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, p
         data = sheet.get_all_values()
         new_id = len(data)
         
-        onglets = ['catalogue', 'ventes', 'stock', 'journal', 'vendeurs', 'config']
-        headers = {
-            'catalogue': ['id', 'nom', 'categorie', 'prixAchat', 'prixVente', 'stock', 'seuil'],
-            'ventes': ['id', 'date', 'heure', 'produit', 'quantite', 'prixVente', 'remise', 'total', 'vendeur'],
-            'stock': ['id', 'produit', 'stockActuel', 'seuil', 'dernierMouvement'],
-            'journal': ['date', 'heure', 'type', 'produit', 'quantite', 'ancienStock', 'nouveauStock', 'utilisateur', 'details'],
-            'vendeurs': ['id', 'username', 'password', 'nom', 'actif'],
-            'config': ['parametre', 'valeur']
-        }
-        
-        for onglet in onglets:
-            nom_onglet = f"boutique{new_id}_{onglet}"
-            try:
-                worksheet = spreadsheet.worksheet(nom_onglet)
-            except:
-                worksheet = spreadsheet.add_worksheet(title=nom_onglet, rows=1000, cols=20)
-                worksheet.append_row(headers[onglet])
-        
-        # Nom complet du propriétaire
         proprietaire_complet = f"{proprietaire_nom} {proprietaire_prenom}".strip()
-        
-        # Ajouter la boutique (colonne I = propriétaire)
         row = [
-            new_id,                              # A: ID
-            nom,                                 # B: Nom de la boutique
-            email,                               # C: Email
-            hash_password(password),             # D: Mot de passe
-            telephone,                           # E: Téléphone
-            adresse,                             # F: Adresse
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), # G: Date inscription
-            'non',                               # H: Statut (en attente)
-            proprietaire_complet                 # I: Nom du propriétaire
+            new_id, nom, email, hash_password(password), 
+            telephone, adresse, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
+            'non', proprietaire_complet
         ]
         sheet.append_row(row)
         
-        # Envoyer une notification email
-        envoyer_notification_boutique(nom, email, telephone, adresse, proprietaire_complet)
+        # 🔥 EMAIL ASYNC - ne bloque pas la réponse !
+        threading.Thread(
+            target=envoyer_notification_boutique,
+            args=(nom, email, telephone, adresse, proprietaire_complet)
+        ).start()
+        
+        print(f"✅ Boutique {nom} créée (ID: {new_id}) - Email en cours d'envoi...")
         
         return {'success': True, 'id': new_id, 'message': 'Demande envoyée. En attente de validation par l\'administrateur.'}
+        
     except Exception as e:
+        print(f"❌ Erreur: {e}")
+        traceback.print_exc()
         return {'success': False, 'error': str(e)}
-
 
 # ========== ROUTES PAGES HTML ==========
 @app.route('/')
