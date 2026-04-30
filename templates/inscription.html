@@ -22,19 +22,32 @@
             width: 100%;
             max-width: 550px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s ease-in;
         }
-        h1 { text-align: center; color: #1e3a8a; margin-bottom: 10px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 { text-align: center; color: #1e3a8a; margin-bottom: 10px; font-size: 28px; }
         h2 { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; font-weight: normal; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 14px; }
+        label .required { color: #dc3545; margin-left: 3px; }
         input, textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 14px;
+            transition: all 0.3s;
+            font-family: inherit;
         }
-        textarea { resize: vertical; }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        textarea { resize: vertical; min-height: 60px; }
         .row {
             display: flex;
             gap: 15px;
@@ -44,7 +57,7 @@
         }
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             color: white;
             border: none;
@@ -53,37 +66,88 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
-        .success { background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .alert-info {
+            background: #e0e7ff;
+            color: #1e3a8a;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 13px;
+            border-left: 4px solid #2563eb;
+        }
         .login-link { text-align: center; margin-top: 20px; }
-        .login-link a { color: #1e3a8a; text-decoration: none; }
+        .login-link a { color: #1e3a8a; text-decoration: none; font-weight: 500; }
+        .login-link a:hover { text-decoration: underline; }
         hr {
             margin: 20px 0;
             border: none;
-            border-top: 1px solid #eee;
+            border-top: 2px solid #f0f0f0;
         }
+        .password-hint {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .strength-weak { color: #dc3545; }
+        .strength-medium { color: #ffc107; }
+        .strength-strong { color: #28a745; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>🏪 GBoutik-MediLogic</h1>
-        <h2>Créer votre espace boutique</h2>
+        <h2>Créez votre espace boutique en quelques secondes</h2>
         
-        <div id="errorMsg" class="error"></div>
-        <div id="successMsg" class="success"></div>
+        <div id="errorMsg" class="alert alert-error"></div>
+        <div id="successMsg" class="alert alert-success"></div>
         
         <!-- Section Boutique -->
         <h3 style="margin-bottom: 15px; color: #1e3a8a;">🏢 Informations de la boutique</h3>
         
         <div class="form-group">
-            <label>Nom de la boutique *</label>
-            <input type="text" id="nom_boutique" placeholder="Ex: Boutique Du Coin">
+            <label>Nom de la boutique <span class="required">*</span></label>
+            <input type="text" id="nom_boutique" placeholder="Ex: Boutique Du Coin, Fashion Store, etc." autocomplete="off">
         </div>
         
         <div class="form-group">
-            <label>📍 Adresse</label>
-            <textarea id="adresse" rows="2" placeholder="Adresse de la boutique"></textarea>
+            <label>📍 Adresse complète</label>
+            <textarea id="adresse" rows="2" placeholder="Adresse physique de la boutique (optionnel)"></textarea>
         </div>
         
         <hr>
@@ -93,23 +157,23 @@
         
         <div class="row">
             <div class="form-group">
-                <label>Nom *</label>
-                <input type="text" id="proprietaire_nom" placeholder="Votre nom">
+                <label>Nom <span class="required">*</span></label>
+                <input type="text" id="proprietaire_nom" placeholder="Votre nom" autocomplete="off">
             </div>
             <div class="form-group">
-                <label>Prénom *</label>
-                <input type="text" id="proprietaire_prenom" placeholder="Votre prénom">
+                <label>Prénom <span class="required">*</span></label>
+                <input type="text" id="proprietaire_prenom" placeholder="Votre prénom" autocomplete="off">
             </div>
         </div>
         
         <div class="form-group">
-            <label>📧 Email *</label>
-            <input type="email" id="email" placeholder="gerant@boutique.com">
+            <label>📧 Email <span class="required">*</span></label>
+            <input type="email" id="email" placeholder="gerant@boutique.com" autocomplete="off">
         </div>
         
         <div class="form-group">
-            <label>📞 Téléphone *</label>
-            <input type="tel" id="telephone" placeholder="Ex: 90XX XX XX">
+            <label>📞 Téléphone <span class="required">*</span></label>
+            <input type="tel" id="telephone" placeholder="Ex: 90XX XX XX ou +221 78 XXX XX XX">
         </div>
         
         <hr>
@@ -118,30 +182,34 @@
         <h3 style="margin-bottom: 15px; color: #1e3a8a;">🔒 Sécurité</h3>
         
         <div class="form-group">
-            <label>🔑 Mot de passe *</label>
+            <label>🔑 Mot de passe <span class="required">*</span></label>
             <input type="password" id="password" placeholder="Minimum 8 caractères" onkeyup="checkPasswordStrength()">
-            <div id="passwordStrength" class="mt-1" style="font-size: 12px;"></div>
+            <div id="passwordStrength" class="password-hint"></div>
         </div>
         
         <div class="form-group">
-            <label>🔑 Confirmer le mot de passe *</label>
-            <input type="password" id="confirm_password" placeholder="" onkeyup="checkPasswordMatch()">
-            <div id="passwordMatch" class="mt-1" style="font-size: 12px;"></div>
+            <label>🔑 Confirmer le mot de passe <span class="required">*</span></label>
+            <input type="password" id="confirm_password" placeholder="Retapez votre mot de passe" onkeyup="checkPasswordMatch()">
+            <div id="passwordMatch" class="password-hint"></div>
         </div>
         
-        <div class="alert alert-info" style="background: #e0e7ff; padding: 12px; border-radius: 8px; margin: 15px 0; font-size: 13px;">
-            <i class="fas fa-info-circle"></i> 
-            Une fois inscrit, votre boutique sera en attente d'activation par l'administrateur.
+        <div class="alert-info">
+            💡 <strong>Information importante :</strong><br>
+            • Une fois inscrit, votre boutique sera en attente d'activation par l'administrateur<br>
+            • Vous recevrez une notification email après validation<br>
+            • Tous les champs marqués d'un <span class="required">*</span> sont obligatoires
         </div>
         
-        <button onclick="inscrire()">Créer ma boutique</button>
+        <button id="submitBtn" onclick="inscrire()">📝 Créer ma boutique</button>
         
         <div class="login-link">
-            <a href="/login_page">Déjà inscrit ? Se connecter</a>
+            🔑 <a href="/login_page">Déjà inscrit ? Connectez-vous à votre espace</a>
         </div>
     </div>
     
     <script>
+        let isSubmitting = false;
+        
         function checkPasswordStrength() {
             var password = document.getElementById('password').value;
             var strengthDiv = document.getElementById('passwordStrength');
@@ -152,9 +220,20 @@
             }
             
             if (password.length < 8) {
-                strengthDiv.innerHTML = '<span style="color: #dc3545;">❌ Minimum 8 caractères requis</span>';
+                strengthDiv.innerHTML = '<span class="strength-weak">❌ Minimum 8 caractères requis</span>';
+                return;
+            }
+            
+            var hasNumber = /\d/.test(password);
+            var hasLetter = /[a-zA-Z]/.test(password);
+            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            
+            if (hasNumber && hasLetter && hasSpecial && password.length >= 10) {
+                strengthDiv.innerHTML = '<span class="strength-strong">✅ Mot de passe fort (excellent)</span>';
+            } else if ((hasNumber && hasLetter) || password.length >= 10) {
+                strengthDiv.innerHTML = '<span class="strength-medium">⚠️ Mot de passe moyen (ajoutez des caractères spéciaux)</span>';
             } else {
-                strengthDiv.innerHTML = '<span style="color: #28a745;">✅ Longueur valide (8+ caractères)</span>';
+                strengthDiv.innerHTML = '<span class="strength-weak">❌ Mot de passe faible (mélangez lettres, chiffres et symboles)</span>';
             }
         }
         
@@ -169,40 +248,123 @@
             }
             
             if (password === confirm) {
-                matchDiv.innerHTML = '<span style="color: #28a745;">✅ Les mots de passe correspondent</span>';
+                matchDiv.innerHTML = '<span class="strength-strong">✅ Les mots de passe correspondent</span>';
             } else {
-                matchDiv.innerHTML = '<span style="color: #dc3545;">❌ Les mots de passe ne correspondent pas</span>';
+                matchDiv.innerHTML = '<span class="strength-weak">❌ Les mots de passe ne correspondent pas</span>';
+            }
+        }
+        
+        function showError(msg) {
+            var div = document.getElementById('errorMsg');
+            div.innerHTML = msg;
+            div.style.display = 'block';
+            setTimeout(() => { 
+                div.style.display = 'none'; 
+            }, 5000);
+            
+            // Scroll to error
+            div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function showSuccess(msg) {
+            var div = document.getElementById('successMsg');
+            div.innerHTML = msg;
+            div.style.display = 'block';
+        }
+        
+        function setLoading(loading) {
+            var btn = document.getElementById('submitBtn');
+            if (loading) {
+                btn.innerHTML = '<span class="spinner"></span> Création en cours...';
+                btn.disabled = true;
+            } else {
+                btn.innerHTML = '📝 Créer ma boutique';
+                btn.disabled = false;
             }
         }
         
         function inscrire() {
+            if (isSubmitting) return;
+            
+            // Récupération des valeurs
             var nom_boutique = document.getElementById('nom_boutique').value.trim();
             var proprietaire_nom = document.getElementById('proprietaire_nom').value.trim();
             var proprietaire_prenom = document.getElementById('proprietaire_prenom').value.trim();
             var email = document.getElementById('email').value.trim();
             var password = document.getElementById('password').value;
             var confirm = document.getElementById('confirm_password').value;
-            var telephone = document.getElementById('telephone').value;
-            var adresse = document.getElementById('adresse').value;
+            var telephone = document.getElementById('telephone').value.trim();
+            var adresse = document.getElementById('adresse').value.trim();
             
-            if (!nom_boutique || !proprietaire_nom || !proprietaire_prenom || !email || !password) {
-                showError('Veuillez remplir tous les champs obligatoires *');
+            // Validation des champs obligatoires
+            if (!nom_boutique) {
+                showError('❌ Veuillez saisir le nom de votre boutique');
+                document.getElementById('nom_boutique').focus();
+                return;
+            }
+            
+            if (!proprietaire_nom) {
+                showError('❌ Veuillez saisir votre nom');
+                document.getElementById('proprietaire_nom').focus();
+                return;
+            }
+            
+            if (!proprietaire_prenom) {
+                showError('❌ Veuillez saisir votre prénom');
+                document.getElementById('proprietaire_prenom').focus();
+                return;
+            }
+            
+            if (!email) {
+                showError('❌ Veuillez saisir votre adresse email');
+                document.getElementById('email').focus();
+                return;
+            }
+            
+            // Validation email
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('❌ Veuillez entrer une adresse email valide (ex: nom@domaine.com)');
+                document.getElementById('email').focus();
+                return;
+            }
+            
+            // Validation téléphone
+            if (telephone && telephone.length < 8) {
+                showError('⚠️ Le numéro de téléphone doit contenir au moins 8 chiffres');
+                document.getElementById('telephone').focus();
+                return;
+            }
+            
+            // Validation mot de passe
+            if (!password) {
+                showError('❌ Veuillez choisir un mot de passe');
+                document.getElementById('password').focus();
                 return;
             }
             
             if (password.length < 8) {
-                showError('Le mot de passe doit contenir au moins 8 caractères');
+                showError('❌ Le mot de passe doit contenir au moins 8 caractères');
+                document.getElementById('password').focus();
                 return;
             }
             
             if (password !== confirm) {
-                showError('Les mots de passe ne correspondent pas');
+                showError('❌ Les mots de passe ne correspondent pas');
+                document.getElementById('confirm_password').focus();
                 return;
             }
             
+            // Envoi de la requête
+            isSubmitting = true;
+            setLoading(true);
+            
             fetch('/api/inscrire_boutique', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify({
                     nom_boutique: nom_boutique,
                     proprietaire_nom: proprietaire_nom,
@@ -213,31 +375,61 @@
                     adresse: adresse
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                isSubmitting = false;
+                setLoading(false);
+                
                 if (data.success) {
-                    showSuccess(data.message);
+                    showSuccess('✅ ' + data.message);
+                    // Redirection après 3 secondes
                     setTimeout(() => {
                         window.location.href = '/login_page';
-                    }, 2000);
+                    }, 3000);
                 } else {
-                    showError(data.error);
+                    showError('❌ ' + (data.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'));
                 }
+            })
+            .catch(error => {
+                isSubmitting = false;
+                setLoading(false);
+                console.error('Erreur:', error);
+                showError('❌ Erreur de connexion au serveur. Veuillez vérifier votre connexion et réessayer.');
             });
         }
         
-        function showError(msg) {
-            var div = document.getElementById('errorMsg');
-            div.innerHTML = msg;
-            div.style.display = 'block';
-            setTimeout(() => { div.style.display = 'none'; }, 3000);
-        }
+        // Permettre la soumission avec la touche Entrée
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    inscrire();
+                }
+            });
+        });
         
-        function showSuccess(msg) {
-            var div = document.getElementById('successMsg');
-            div.innerHTML = msg;
-            div.style.display = 'block';
-        }
+        // Validation en temps réel de l'email
+        document.getElementById('email').addEventListener('blur', function() {
+            var email = this.value.trim();
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                this.style.borderColor = '#dc3545';
+            } else {
+                this.style.borderColor = '#e0e0e0';
+            }
+        });
+        
+        document.getElementById('email').addEventListener('input', function() {
+            this.style.borderColor = '#e0e0e0';
+        });
+        
+        // Focus sur le premier champ
+        document.getElementById('nom_boutique').focus();
     </script>
 </body>
 </html>

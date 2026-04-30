@@ -4,11 +4,11 @@ from email.mime.multipart import MIMEMultipart
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
 from datetime import datetime, timedelta
 import hashlib
 import os
 import json
+import traceback
 
 # ========== CONFIGURATION EMAIL ==========
 EMAIL_EXPEDITEUR = os.environ.get('EMAIL_EXPEDITEUR', '')
@@ -59,8 +59,18 @@ def get_boutique_by_email(email):
         pass
     return None
 
-def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse):
-    """Envoie un email à l'admin pour demander validation"""
+def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse, proprietaire):
+    """Envoie un email à l'admin avec demande de validation"""
+
+    # 🔍 LOGS DE DEBUG
+    print(f"📧 Tentative d'envoi email...")
+    print(f"   - Expéditeur: {EMAIL_EXPEDITEUR}")
+    print(f"   - Destinataire: {EMAIL_DESTINATAIRE}")
+    print(f"   - Mot de passe présent: {'OUI' if EMAIL_MDP else 'NON'}")
+    
+    if not EMAIL_EXPEDITEUR or not EMAIL_MDP or not EMAIL_DESTINATAIRE:
+        print("❌ Configuration email incomplète !")
+        return False
     try:
         sujet = f"🆕 DEMANDE VALIDATION - Nouvelle boutique: {nom_boutique}"
         
@@ -72,7 +82,7 @@ def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse):
             <style>
                 body {{ font-family: Arial, sans-serif; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: #ff9800; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .header {{ background: #1e3a8a; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
                 .content {{ padding: 20px; }}
                 .info {{ background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 10px 0; }}
                 .button {{ background: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; }}
@@ -85,11 +95,11 @@ def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse):
                     <h2>🏪 NOUVELLE DEMANDE D'INSCRIPTION</h2>
                 </div>
                 <div class="content">
-                    <p>Une nouvelle boutique demande à s'inscrire sur GBoutik-MediLogic.</p>
                     <div class="info">
                         <p><strong>📅 Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
                         <p><strong>🏪 Nom :</strong> {nom_boutique}</p>
-                        <p><strong>📧 Email gérant :</strong> {email_gerant}</p>
+                        <p><strong>👤 Propriétaire :</strong> {proprietaire}</p>
+                        <p><strong>📧 Email :</strong> {email_gerant}</p>
                         <p><strong>📞 Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
                         <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
                     </div>
@@ -118,78 +128,14 @@ def envoyer_demande_validation(nom_boutique, email_gerant, telephone, adresse):
         server.send_message(msg)
         server.quit()
         
-        print(f"✅ Demande validation envoyée pour {nom_boutique}")
+        print(f"✅ Email de validation envoyé pour {nom_boutique}")
         return True
     except Exception as e:
         print(f"❌ Erreur envoi email: {e}")
         return False
 
-def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse):
-    """Envoie un email au concepteur quand une nouvelle boutique s'inscrit"""
-    try:
-        sujet = f"🆕 NOUVELLE BOUTIQUE - {nom_boutique}"
-        
-        message_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: #1e3a8a; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ padding: 20px; }}
-                .info {{ background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 10px 0; }}
-                .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 20px; }}
-                .badge {{ background: #28a745; color: white; padding: 5px 10px; border-radius: 5px; display: inline-block; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h2>🏪 GBoutik-MediLogic</h2>
-                    <p>Nouvelle inscription boutique</p>
-                </div>
-                <div class="content">
-                    <div class="info">
-                        <p><strong>📅 Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
-                        <p><strong>🏪 Nom :</strong> {nom_boutique}</p>
-                        <p><strong>📧 Email :</strong> {email_gerant}</p>
-                        <p><strong>📞 Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
-                        <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
-                    </div>
-                    <p style="text-align: center;">
-                        <span class="badge">✅ Nouvelle boutique enregistrée</span>
-                    </p>
-                    <p>Connecte-toi à l'<strong>Admin Global</strong> pour gérer cette boutique.</p>
-                </div>
-                <div class="footer">
-                    <p>GBoutik-MediLogic - Système de gestion multi-boutiques</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_EXPEDITEUR
-        msg['To'] = EMAIL_DESTINATAIRE
-        msg['Subject'] = sujet
-        msg.attach(MIMEText(message_html, 'html'))
-        
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(EMAIL_EXPEDITEUR, EMAIL_MDP)
-        server.send_message(msg)
-        server.quit()
-        
-        print(f"✅ Email envoyé pour {nom_boutique}")
-        return True
-    except Exception as e:
-        print(f"❌ Erreur email: {e}")
-        return False
 
-def creer_boutique(nom, email, password, telephone, adresse):
+def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, proprietaire_prenom):
     try:
         sheet = spreadsheet.worksheet("BOUTIQUES")
         data = sheet.get_all_values()
@@ -213,12 +159,25 @@ def creer_boutique(nom, email, password, telephone, adresse):
                 worksheet = spreadsheet.add_worksheet(title=nom_onglet, rows=1000, cols=20)
                 worksheet.append_row(headers[onglet])
         
-        # actif = 'non' par défaut (en attente de validation)
-        row = [new_id, nom, email, hash_password(password), telephone, adresse, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'non']
+        # Nom complet du propriétaire
+        proprietaire_complet = f"{proprietaire_nom} {proprietaire_prenom}".strip()
+        
+        # Ajouter la boutique (colonne I = propriétaire)
+        row = [
+            new_id,                              # A: ID
+            nom,                                 # B: Nom de la boutique
+            email,                               # C: Email
+            hash_password(password),             # D: Mot de passe
+            telephone,                           # E: Téléphone
+            adresse,                             # F: Adresse
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), # G: Date inscription
+            'non',                               # H: Statut (en attente)
+            proprietaire_complet                 # I: Nom du propriétaire
+        ]
         sheet.append_row(row)
         
-        # Envoyer une demande de validation à l'admin
-        envoyer_demande_validation(nom, email, telephone, adresse)
+        # Envoyer une notification email
+        envoyer_notification_boutique(nom, email, telephone, adresse, proprietaire_complet)
         
         return {'success': True, 'id': new_id, 'message': 'Demande envoyée. En attente de validation par l\'administrateur.'}
     except Exception as e:
@@ -318,7 +277,9 @@ def api_inscrire():
         data.get('email'),
         data.get('password'),
         data.get('telephone', ''),
-        data.get('adresse', '')
+        data.get('adresse', ''),
+        data.get('proprietaire_nom', ''),
+        data.get('proprietaire_prenom', '')
     )
     return jsonify(result)
 
