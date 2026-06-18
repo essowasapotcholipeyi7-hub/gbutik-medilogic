@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventes annulées - GBoutik-MediLogic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .card {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .header h2 {
+            color: #1e3a8a;
+            margin: 0;
+        }
+        .header h2 span {
+            background: #dc3545;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: #5a6268;
+        }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #dc3545;
+            color: white;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+            text-align: left;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .badge-annule {
+            background: #dc3545;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #666;
+        }
+        .stat-card.total .number { color: #dc3545; }
+        .stat-card.produits .number { color: #17a2b8; }
+        .stat-card.montant .number { color: #28a745; }
+        @media (max-width: 768px) {
+            .card { padding: 15px; }
+            .header h2 { font-size: 18px; }
+            th, td { font-size: 12px; padding: 6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h2>
+                🗑️ Ventes annulées
+                <span id="compteur">0</span>
+            </h2>
+            <a href="/dashboard_boutique" class="back-btn">← Retour</a>
+        </div>
+        
+        <!-- Statistiques -->
+        <div class="stats" id="statsContainer">
+            <div class="stat-card total">
+                <div class="number" id="nbAnnulations">0</div>
+                <div class="label">Total annulations</div>
+            </div>
+            <div class="stat-card produits">
+                <div class="number" id="nbProduits">0</div>
+                <div class="label">Produits annulés</div>
+            </div>
+            <div class="stat-card montant">
+                <div class="number" id="montantTotal">0 FCFA</div>
+                <div class="label">Montant total annulé</div>
+            </div>
+        </div>
+        
+        <!-- Message -->
+        <div id="message"></div>
+        
+        <!-- Tableau -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Heure</th>
+                        <th>Produit</th>
+                        <th>Qté</th>
+                        <th>Prix</th>
+                        <th>Total</th>
+                        <th>Vendeur</th>
+                        <th>Motif</th>
+                        <th>Annulé le</th>
+                    </tr>
+                </thead>
+                <tbody id="ventesBody">
+                    <tr><td colspan="10">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center; color: #888; font-size: 13px;">
+            🔒 Les ventes annulées ne sont pas prises en compte dans les statistiques
+        </div>
+    </div>
+    
+    <script>
+        // ========== CHARGER LES VENTES ANNULÉES ==========
+        function chargerVentesAnnulees() {
+            fetch('/api/get_ventes_annulees')
+                .then(response => response.json())
+                .then(data => {
+                    var tbody = document.getElementById('ventesBody');
+                    var compteur = document.getElementById('compteur');
+                    var nbAnnulations = document.getElementById('nbAnnulations');
+                    var nbProduits = document.getElementById('nbProduits');
+                    var montantTotal = document.getElementById('montantTotal');
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="10">
+                                    <div class="empty-state">
+                                        <div class="icon">✅</div>
+                                        <p>Aucune vente annulée</p>
+                                        <p style="font-size: 13px; color: #aaa;">Les ventes annulées apparaîtront ici</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        compteur.textContent = '0';
+                        nbAnnulations.textContent = '0';
+                        nbProduits.textContent = '0';
+                        montantTotal.textContent = '0 FCFA';
+                        return;
+                    }
+                    
+                    // Mettre à jour le compteur
+                    compteur.textContent = data.length;
+                    nbAnnulations.textContent = data.length;
+                    
+                    // Calculer les stats
+                    var totalProduits = 0;
+                    var totalMontant = 0;
+                    var produitsSet = new Set();
+                    
+                    data.forEach(function(v) {
+                        totalProduits += v.quantite || 0;
+                        totalMontant += v.total || 0;
+                        if (v.produit) produitsSet.add(v.produit);
+                    });
+                    
+                    nbProduits.textContent = totalProduits;
+                    montantTotal.textContent = totalMontant.toLocaleString() + ' FCFA';
+                    
+                    // Afficher les lignes
+                    tbody.innerHTML = '';
+                    data.forEach(function(v, index) {
+                        var row = tbody.insertRow();
+                        row.insertCell(0).textContent = index + 1;
+                        row.insertCell(1).textContent = v.date || '-';
+                        row.insertCell(2).textContent = v.heure || '-';
+                        row.insertCell(3).innerHTML = '<strong>' + (v.produit || '-') + '</strong>';
+                        row.insertCell(4).textContent = v.quantite || 0;
+                        row.insertCell(5).textContent = (v.prix_vendu || 0).toLocaleString() + ' FCFA';
+                        row.insertCell(6).innerHTML = '<span style="color:#dc3545;">' + (v.total || 0).toLocaleString() + ' FCFA</span>';
+                        row.insertCell(7).textContent = v.vendeur || '-';
+                        row.insertCell(8).innerHTML = '<span class="badge-annule">' + (v.motif || 'Annulation') + '</span>';
+                        row.insertCell(9).textContent = v.date_annulation || '-';
+                    });
+                })
+                .catch(function(error) {
+                    document.getElementById('ventesBody').innerHTML = '<tr><td colspan="10">❌ Erreur: ' + error + '</td></tr>';
+                });
+        }
+        
+        // ========== CHARGER AU DÉMARRAGE ==========
+        chargerVentesAnnulees();
+        
+        // Rafraîchir toutes les 30 secondes
+        setInterval(chargerVentesAnnulees, 30000);
+    </script>
+</body>
+</html>

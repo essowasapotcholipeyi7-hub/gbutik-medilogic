@@ -940,6 +940,17 @@ def api_get_statistiques():
         row = data[i]
         if len(row) > 7 and row[0] and row[0].startswith('VENTE'):
             try:
+                # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                est_annulee = False
+                try:
+                    if len(row) > 9 and row[9] == '1':
+                        est_annulee = True
+                except:
+                    pass
+                
+                if est_annulee:
+                    continue  # ← On ignore cette vente
+                
                 date_vente = row[1] if len(row) > 1 else ''
                 if est_dans_periode(date_vente):
                     # Déterminer la colonne du total (colonne H = index 7)
@@ -987,6 +998,7 @@ def api_get_statistiques():
         'topProduits': topProduits,
         'topVendeurs': topVendeurs
     })
+
 @app.route('/api/annuler_vente', methods=['POST'])
 def api_annuler_vente():
     if 'boutique_id' not in session:
@@ -1035,7 +1047,7 @@ def api_get_dashboard_stats():
     
     boutique_id = session['boutique_id']
     
-    # 1. Chiffre d'affaires depuis les ventes
+    # 1. Chiffre d'affaires depuis les ventes (en excluant les annulées)
     ventes_sheet = get_sheet(boutique_id, 'ventes')
     ca_jour = 0
     ca_mois = 0
@@ -1050,6 +1062,17 @@ def api_get_dashboard_stats():
             row = data[i]
             if len(row) > 7:  # Au moins 8 colonnes
                 try:
+                    # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                    est_annulee = False
+                    try:
+                        if len(row) > 9 and row[9] == '1':
+                            est_annulee = True
+                    except:
+                        pass
+                    
+                    if est_annulee:
+                        continue  # ← On ignore cette vente
+                    
                     # La colonne total est à l'index 7 (colonne H)
                     total = float(row[7]) if row[7] and str(row[7]).replace('.', '').isdigit() else 0
                     date_vente = row[1] if len(row) > 1 else ''
@@ -1105,7 +1128,6 @@ def api_get_dashboard_stats():
         'alertes': alertes,
         'produits_critiques': produits_critiques
     })
-
 @app.route('/api/test_dashboard')
 def test_dashboard():
     if 'boutique_id' not in session:
@@ -1415,12 +1437,23 @@ def get_evolution_ventes():
     
     data = sheet.get_all_values()
     
-    # Regrouper par date
+    # Regrouper par date (en excluant les ventes annulées)
     ventes_par_jour = {}
     for i in range(1, len(data)):
         row = data[i]
         if len(row) > 7:  # Au moins 8 colonnes
             try:
+                # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                est_annulee = False
+                try:
+                    if len(row) > 9 and row[9] == '1':
+                        est_annulee = True
+                except:
+                    pass
+                
+                if est_annulee:
+                    continue  # ← On ignore cette vente
+                
                 date = row[1] if len(row) > 1 else ''
                 total = float(row[7]) if row[7] and str(row[7]).replace('.', '').isdigit() else 0
                 if date:
@@ -1467,10 +1500,20 @@ def api_traiter_correction_vente():
             ventes_data = ventes_sheet.get_all_values()
             for i in range(1, len(ventes_data)):
                 if len(ventes_data[i]) > 0 and ventes_data[i][0] == data.get('id'):
-                    if len(ventes_data[i]) <= 9:
-                        for _ in range(len(ventes_data[i]), 10):
-                            ventes_sheet.update_cell(i+1, _+1, '')
+                    # S'assurer qu'il y a assez de colonnes (jusqu'à la colonne L = index 11)
+                    while len(ventes_data[i]) < 12:
+                        ventes_data[i].append('')
+                    
+                    # Marquer comme annulée (colonne J = index 9)
                     ventes_sheet.update_cell(i+1, 10, '1')
+                    
+                    # Enregistrer le motif (colonne K = index 10)
+                    motif = data.get('motif', 'Annulation')
+                    ventes_sheet.update_cell(i+1, 11, motif)
+                    
+                    # Enregistrer la date d'annulation (colonne L = index 11)
+                    date_annulation = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                    ventes_sheet.update_cell(i+1, 12, date_annulation)
                     break
             
             # Restaurer le stock
@@ -1493,7 +1536,7 @@ def api_traiter_correction_vente():
                     data.get('quantite'),
                     0, 0,
                     session.get('user_nom', 'Gérant'),
-                    data.get('motif', '')
+                    data.get('motif', 'Annulation')
                 ])
             
             return jsonify({'success': True, 'message': f'Vente de {data.get("produit")} annulée'})
@@ -1518,7 +1561,6 @@ def api_traiter_correction_vente():
                     ventes_sheet.update_cell(i+1, 8, nouveau_total)
                     break
             
-            # Ajuster le stock (différence de prix ? Non, le stock ne change pas)
             # Journal
             if journal_sheet:
                 journal_sheet.append_row([
@@ -1851,6 +1893,80 @@ def api_modifier_produit():
     except Exception as e:
         print(f"❌ Erreur modification: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ventes_annulees')
+def ventes_annulees():
+    if 'boutique_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('ventes_annulees.html')
+
+@app.route('/api/get_ventes_annulees')
+def api_get_ventes_annulees():
+    if 'boutique_id' not in session:
+        return jsonify([])
+    
+    boutique_id = session['boutique_id']
+    
+    ventes_sheet = get_sheet(boutique_id, 'ventes')
+    if not ventes_sheet:
+        return jsonify([])
+    
+    data = ventes_sheet.get_all_values()
+    ventes_annulees = []
+    
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) < 4:
+            continue
+        
+        if not row[0] or not str(row[0]).startswith('VENTE_'):
+            continue
+        
+        # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+        est_annulee = False
+        try:
+            if len(row) > 9 and row[9] == '1':
+                est_annulee = True
+        except:
+            pass
+        
+        if not est_annulee:
+            continue  # ← On garde uniquement les annulées
+        
+        try:
+            # Récupérer le motif d'annulation (colonne K = index 10)
+            motif = ''
+            try:
+                if len(row) > 10 and row[10]:
+                    motif = row[10]
+            except:
+                pass
+            
+            # Récupérer la date d'annulation (colonne L = index 11)
+            date_annulation = ''
+            try:
+                if len(row) > 11 and row[11]:
+                    date_annulation = row[11]
+            except:
+                pass
+            
+            ventes_annulees.append({
+                'id': str(row[0]),
+                'date': str(row[1]) if len(row) > 1 else '',
+                'heure': str(row[2]) if len(row) > 2 else '',
+                'produit': str(row[3]) if len(row) > 3 else '',
+                'quantite': int(float(row[4])) if len(row) > 4 and row[4] else 0,
+                'prix_vendu': float(row[5]) if len(row) > 5 and row[5] else 0,
+                'total': float(row[7]) if len(row) > 7 and row[7] else 0,
+                'vendeur': str(row[8]) if len(row) > 8 else '',
+                'motif': motif,
+                'date_annulation': date_annulation
+            })
+        except Exception as e:
+            print(f"Erreur lecture vente annulée: {e}")
+            continue
+    
+    return jsonify(ventes_annulees[::-1])  # Du plus récent au plus ancien
 
 if __name__ == '__main__':
     import os
