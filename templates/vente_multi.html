@@ -50,7 +50,7 @@
             <div style="font-size: 32px; font-weight: bold;" id="total">0 FCFA</div>
         </div>
         
-        <button onclick="validerVente()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+        <button id="btnValiderVente" onclick="validerVente()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
             ✅ Valider la vente
         </button>
     </div>
@@ -116,10 +116,11 @@
         </div>
         
         <div style="display: flex; gap: 10px;">
-            <button onclick="validerPanier()" style="flex:2; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+            <button id="btnValiderPanier" onclick="validerPanier()" style="flex:2; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+
                 ✅ Valider tout le panier
             </button>
-            <button onclick="viderPanier()" style="flex:1; background:#dc3545; color:white; border:none; border-radius:8px; padding:14px; cursor:pointer;">
+            <button onclick="viderPanier()" style="flex:1; background:#dc3545; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
                 🗑️ Vider
             </button>
         </div>
@@ -129,6 +130,20 @@
         <a href="{% if user_role == 'vendeur' %}/dashboard_vendeur{% else %}/dashboard_boutique{% endif %}" style="background:#6c757d; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; display:inline-block;">
             ← Retour au tableau de bord
         </a>
+    </div>
+</div>
+
+<!-- Barre de progression + Message + Spinner groupés -->
+<div id="progressContainer" class="progress-container" style="margin: 5px 0; padding: 3px;">
+    <div class="progress-bar" id="progressBar" style="height: 22px; font-size: 12px;">
+        <span id="progressText">0%</span>
+    </div>
+    <div class="progress-message" id="progressMessage" style="margin: 3px 0; font-size: 12px;">
+        ⏳ Préparation de la vente...
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; justify-content: center; margin: 2px 0;">
+        <div class="spinner" id="spinner" style="width: 16px; height: 16px;"></div>
+        <span id="statusText" style="color: #28a745; font-weight: bold; font-size: 13px;"></span>
     </div>
 </div>
 
@@ -160,7 +175,7 @@
             </div>
             <div class="recu-footer">
                 <p>Merci de votre visite !</p>
-                <p>💰 Retour satisfait ou remboursé</p>
+                <p>Une fois la vente est validée, elle n'est plus reprise !</p>
             </div>
             <div class="recu-buttons">
                 <button class="btn-print" onclick="imprimerRecu()">🖨️ Imprimer</button>
@@ -185,6 +200,53 @@
     .stock-suffisant { color: #28a745; font-weight: normal; }
     .stock-insuffisant { color: #dc3545; font-weight: bold; }
 
+/* Conteneur de la barre de progression */
+.progress-container {
+    display: none;
+    width: 100%;
+    background: #f0f0f0;
+    border-radius: 10px;
+    padding: 4px;
+    margin: 5px 0;  /* ← Marge réduite */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* La barre de progression elle-même */
+.progress-bar {
+    width: 0%;
+    height: 24px;  /* ← Hauteur réduite */
+    background: linear-gradient(90deg, #28a745, #17a2b8, #007bff);
+    border-radius: 8px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;  /* ← Taille réduite */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Message de progression */
+.progress-message {
+    text-align: center;
+    margin: 3px 0;  /* ← Marge réduite */
+    font-size: 12px;  /* ← Taille réduite */
+    color: #555;
+}
+
+/* Spinner de chargement */
+.spinner {
+    display: none;
+    width: 16px;  /* ← Taille réduite */
+    height: 16px;  /* ← Taille réduite */
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #28a745;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+}
     /* Styles pour le reçu */
 .recu-container {
     display: flex;
@@ -515,7 +577,7 @@ function imprimerRecu() {
     printWindow.document.close();
 }
     
-    function validerVente() {
+function validerVente() {
     var produit = document.getElementById('produitSelect').value;
     var quantite = parseInt(document.getElementById('quantite').value);
     var prixVendu = parseFloat(document.getElementById('prixVendu').value);
@@ -532,12 +594,74 @@ function imprimerRecu() {
         return;
     }
     
-    var msgDiv = document.getElementById('venteMessage');
-    msgDiv.innerHTML = '⏳ Enregistrement...';
-    msgDiv.style.display = 'block';
-    msgDiv.style.background = '#d1ecf1';
-    msgDiv.style.color = '#0c5460';
+    // ========== AFFICHER LA BARRE DE PROGRESSION ==========
+    var progressContainer = document.getElementById('progressContainer');
+    var progressBar = document.getElementById('progressBar');
+    var progressText = document.getElementById('progressText');
+    var progressMessage = document.getElementById('progressMessage');
+    var spinner = document.getElementById('spinner');
+    var statusText = document.getElementById('statusText');
     
+    if (progressContainer) {
+        progressContainer.style.display = 'block';
+    }
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+    }
+    if (progressText) {
+        progressText.textContent = '0%';
+    }
+    if (progressMessage) {
+        progressMessage.textContent = '⏳ Préparation de la vente...';
+        progressMessage.style.color = '#555';
+    }
+    if (spinner) {
+        spinner.style.display = 'inline-block';
+    }
+    if (statusText) {
+        statusText.textContent = '⏳ Traitement en cours...';
+        statusText.style.color = '#28a745';
+    }
+    
+    // ========== DÉSACTIVER LE BOUTON ==========
+    var btn = document.getElementById('btnValiderVente');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Enregistrement...';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    }
+    
+    // ========== ANIMATION DE LA BARRE ==========
+    var progression = 0;
+    var messages = [
+        '⏳ Préparation de la vente...',
+        '📦 Vérification du stock...',
+        '💳 Enregistrement de la vente...',
+        '📊 Mise à jour du stock...',
+        '📝 Génération du reçu...'
+    ];
+    
+    var interval = setInterval(function() {
+        progression += 5;
+        if (progression <= 90) {
+            if (progressBar) {
+                progressBar.style.width = progression + '%';
+            }
+            if (progressText) {
+                progressText.textContent = progression + '%';
+            }
+            if (progressMessage) {
+                var idx = Math.floor(progression / 18);
+                if (idx < messages.length) {
+                    progressMessage.textContent = messages[idx];
+                }
+            }
+        }
+    }, 250);
+    
+    // ========== ENVOI DE LA REQUÊTE ==========
     fetch('/api/valider_vente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -551,10 +675,29 @@ function imprimerRecu() {
     })
     .then(response => response.json())
     .then(data => {
+        clearInterval(interval);
+        
+        // ========== COMPLÉTER LA BARRE À 100% ==========
+        if (progressBar) {
+            progressBar.style.width = '100%';
+        }
+        if (progressText) {
+            progressText.textContent = '100%';
+        }
+        
         if (data.success) {
-            msgDiv.innerHTML = '✅ ' + data.message;
-            msgDiv.style.background = '#d4edda';
-            msgDiv.style.color = '#155724';
+            // ✅ SUCCÈS
+            if (progressMessage) {
+                progressMessage.textContent = '✅ Vente validée avec succès !';
+                progressMessage.style.color = '#28a745';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #28a745, #20c997)';
+            }
+            if (statusText) {
+                statusText.textContent = '✅ Vente terminée !';
+                statusText.style.color = '#28a745';
+            }
             
             // Afficher le reçu
             var recuData = {
@@ -582,18 +725,104 @@ function imprimerRecu() {
             document.getElementById('stockDispo').value = '';
             document.getElementById('total').innerHTML = '0 FCFA';
             
-            // Recharger les produits (met à jour le stock)
+            // Recharger les produits
             chargerProduits();
             
-            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+            // Cacher la barre après 3 secondes
+            setTimeout(function() {
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+                if (statusText) {
+                    statusText.textContent = '';
+                }
+                if (progressBar) {
+                    progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+                }
+            }, 3000);
+            
         } else {
-            msgDiv.innerHTML = '❌ ' + data.error;
-            msgDiv.style.background = '#f8d7da';
-            msgDiv.style.color = '#721c24';
+            // ❌ ERREUR
+            if (progressMessage) {
+                progressMessage.textContent = '❌ ' + data.error;
+                progressMessage.style.color = '#dc3545';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #dc3545, #ff6b6b)';
+            }
+            if (statusText) {
+                statusText.textContent = '❌ Erreur';
+                statusText.style.color = '#dc3545';
+            }
+            
+            // Cacher la barre après 4 secondes
+            setTimeout(function() {
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+                if (statusText) {
+                    statusText.textContent = '';
+                }
+                if (progressBar) {
+                    progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+                }
+            }, 4000);
         }
+    })
+    .catch(function(error) {
+        clearInterval(interval);
+        
+        // ❌ ERREUR RÉSEAU
+        if (progressMessage) {
+            progressMessage.textContent = '❌ Erreur réseau: ' + error;
+            progressMessage.style.color = '#dc3545';
+        }
+        if (progressBar) {
+            progressBar.style.background = 'linear-gradient(90deg, #dc3545, #ff6b6b)';
+            progressBar.style.width = '100%';
+        }
+        if (progressText) {
+            progressText.textContent = '100%';
+        }
+        if (statusText) {
+            statusText.textContent = '❌ Erreur';
+            statusText.style.color = '#dc3545';
+        }
+        
+        setTimeout(function() {
+            if (progressContainer) {
+                progressContainer.style.display = 'none';
+            }
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+            if (statusText) {
+                statusText.textContent = '';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+            }
+        }, 4000);
+    })
+    .finally(function() {
+        // ========== RÉACTIVER LE BOUTON ==========
+        setTimeout(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Valider la vente';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        }, 1500);
     });
 }
-    
+
     // ========== FONCTIONS PANIER ==========
     
     function ajouterAuPanier() {
@@ -676,7 +905,7 @@ function imprimerRecu() {
         document.getElementById('totalApresRemise').innerHTML = finalTotal.toLocaleString() + ' FCFA';
     }
     
-    function validerPanier() {
+function validerPanier() {
     if (panier.length === 0) {
         alert('Panier vide');
         return;
@@ -708,12 +937,86 @@ function imprimerRecu() {
     
     if (!confirm(msg)) return;
     
-    var msgDiv = document.getElementById('venteMessage');
-    msgDiv.innerHTML = '⏳ Enregistrement du panier...';
-    msgDiv.style.display = 'block';
-    msgDiv.style.background = '#d1ecf1';
-    msgDiv.style.color = '#0c5460';
+    // ========== RÉCUPÉRER LES ÉLÉMENTS ==========
+    var progressContainer = document.getElementById('progressContainer');
+    var progressBar = document.getElementById('progressBar');
+    var progressText = document.getElementById('progressText');
+    var progressMessage = document.getElementById('progressMessage');
+    var spinner = document.getElementById('spinner');
+    var statusText = document.getElementById('statusText');
     
+    console.log('progressContainer:', progressContainer); // DEBUG
+    console.log('progressBar:', progressBar); // DEBUG
+    
+    // ========== AFFICHER LA BARRE DE PROGRESSION ==========
+    if (progressContainer) {
+        progressContainer.style.display = 'block';
+    } else {
+        console.error('❌ progressContainer non trouvé !');
+    }
+    
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+    }
+    
+    if (progressText) {
+        progressText.textContent = '0%';
+    }
+    
+    if (progressMessage) {
+        progressMessage.textContent = '⏳ Préparation de la vente...';
+        progressMessage.style.color = '#555';
+    }
+    
+    if (spinner) {
+        spinner.style.display = 'inline-block';
+    }
+    
+    if (statusText) {
+        statusText.textContent = '⏳ Traitement en cours...';
+        statusText.style.color = '#28a745';
+    }
+    
+    // ========== DÉSACTIVER LE BOUTON ==========
+    var btn = document.getElementById('btnValiderPanier');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Traitement...';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    }
+    
+    // ========== ANIMATION DE LA BARRE ==========
+    var progression = 0;
+    var messages = [
+        '⏳ Préparation de la vente...',
+        '📦 Vérification du stock...',
+        '💳 Enregistrement des articles...',
+        '🧮 Calcul des remises...',
+        '📊 Mise à jour des statistiques...',
+        '📝 Génération du reçu...'
+    ];
+    
+    var interval = setInterval(function() {
+        progression += 5;
+        if (progression <= 90) {
+            if (progressBar) {
+                progressBar.style.width = progression + '%';
+            }
+            if (progressText) {
+                progressText.textContent = progression + '%';
+            }
+            if (progressMessage) {
+                var idx = Math.floor(progression / 15);
+                if (idx < messages.length) {
+                    progressMessage.textContent = messages[idx];
+                }
+            }
+        }
+    }, 250);
+    
+    // ========== ENVOI DE LA REQUÊTE ==========
     fetch('/api/valider_panier', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -725,12 +1028,31 @@ function imprimerRecu() {
     })
     .then(response => response.json())
     .then(data => {
+        clearInterval(interval);
+        
+        // ========== COMPLÉTER LA BARRE À 100% ==========
+        if (progressBar) {
+            progressBar.style.width = '100%';
+        }
+        if (progressText) {
+            progressText.textContent = '100%';
+        }
+        
         if (data.success) {
-            msgDiv.innerHTML = '✅ ' + data.message;
-            msgDiv.style.background = '#d4edda';
-            msgDiv.style.color = '#155724';
+            // ✅ SUCCÈS
+            if (progressMessage) {
+                progressMessage.textContent = '✅ Vente validée avec succès !';
+                progressMessage.style.color = '#28a745';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #28a745, #20c997)';
+            }
+            if (statusText) {
+                statusText.textContent = '✅ Vente terminée !';
+                statusText.style.color = '#28a745';
+            }
             
-            // Afficher le reçu du panier
+            // Afficher le reçu
             var recuData = {
                 numero: 'PANIER-' + Date.now(),
                 date: new Date().toLocaleDateString('fr-FR'),
@@ -739,12 +1061,14 @@ function imprimerRecu() {
                 totalBrut: total,
                 remise: remiseGlobale,
                 total: totalFinal,
-                articles: panier.map(item => ({
-                    nom: item.produit,
-                    quantite: item.quantite,
-                    prix: item.prix,
-                    total: item.total
-                }))
+                articles: panier.map(function(item) {
+                    return {
+                        nom: item.produit,
+                        quantite: item.quantite,
+                        prix: item.prix,
+                        total: item.total
+                    };
+                })
             };
             afficherRecu(recuData);
             
@@ -755,18 +1079,100 @@ function imprimerRecu() {
             document.getElementById('totalPanier').innerHTML = '0 FCFA';
             document.getElementById('totalApresRemise').innerHTML = '0 FCFA';
             
-            // Recharger les produits (met à jour le stock)
+            // Recharger les produits
             chargerProduits();
             
-            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+            // Cacher la barre après 3 secondes
+            setTimeout(function() {
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+                if (statusText) {
+                    statusText.textContent = '';
+                }
+                if (progressBar) {
+                    progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+                }
+            }, 3000);
+            
         } else {
-            msgDiv.innerHTML = '❌ ' + data.error;
-            msgDiv.style.background = '#f8d7da';
-            msgDiv.style.color = '#721c24';
+            // ❌ ERREUR
+            if (progressMessage) {
+                progressMessage.textContent = '❌ ' + data.error;
+                progressMessage.style.color = '#dc3545';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #dc3545, #ff6b6b)';
+            }
+            if (statusText) {
+                statusText.textContent = '❌ Erreur';
+                statusText.style.color = '#dc3545';
+            }
+            
+            setTimeout(function() {
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+                if (statusText) {
+                    statusText.textContent = '';
+                }
+                if (progressBar) {
+                    progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+                }
+            }, 4000);
         }
+    })
+    .catch(function(error) {
+        clearInterval(interval);
+        
+        if (progressMessage) {
+            progressMessage.textContent = '❌ Erreur réseau: ' + error;
+            progressMessage.style.color = '#dc3545';
+        }
+        if (progressBar) {
+            progressBar.style.background = 'linear-gradient(90deg, #dc3545, #ff6b6b)';
+            progressBar.style.width = '100%';
+        }
+        if (progressText) {
+            progressText.textContent = '100%';
+        }
+        if (statusText) {
+            statusText.textContent = '❌ Erreur';
+            statusText.style.color = '#dc3545';
+        }
+        
+        setTimeout(function() {
+            if (progressContainer) {
+                progressContainer.style.display = 'none';
+            }
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+            if (statusText) {
+                statusText.textContent = '';
+            }
+            if (progressBar) {
+                progressBar.style.background = 'linear-gradient(90deg, #28a745, #17a2b8, #007bff)';
+            }
+        }, 4000);
+    })
+    .finally(function() {
+        setTimeout(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Valider tout le panier';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        }, 1500);
     });
 }
-    
     function changerMode(nouveauMode) {
         mode = nouveauMode;
         if (mode === 'unique') {

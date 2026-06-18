@@ -23,7 +23,7 @@
                 </tr>
             </thead>
             <tbody id="catalogueBody">
-                <tr><td colspan="8">Chargement...<\/td><\/tr>
+                <tr><td colspan="8">Chargement...</td></tr>
             </tbody>
         </table>
     </div>
@@ -34,7 +34,7 @@
     </div>
 </div>
 
-<!-- Modal Ajout -->
+<!-- ========== MODAL AJOUT ========== -->
 <div id="modalAjout" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:500px;">
         <h3>➕ Ajouter un produit</h3>
@@ -45,8 +45,27 @@
         <input type="number" id="modalStock" placeholder="Stock initial" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <input type="number" id="modalSeuil" placeholder="Seuil alerte" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="ajouterProduit()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">✅ Ajouter</button>
+            <button id="btnAjouterSave" onclick="ajouterProduit()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">✅ Ajouter</button>
             <button onclick="fermerModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">❌ Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== MODAL MODIFIER ========== -->
+<div id="modalEdit" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:500px;">
+        <h3>✏️ Modifier le produit</h3>
+        <input type="hidden" id="editId">
+        <input type="text" id="editNom" placeholder="Nom *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="text" id="editCategorie" placeholder="Catégorie" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="number" id="editPrixAchat" placeholder="Prix achat *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="number" id="editPrixVente" placeholder="Prix vente *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="number" id="editStock" placeholder="Stock" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="number" id="editSeuil" placeholder="Seuil alerte" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <div id="editMessage" style="display:none; padding:10px; border-radius:8px; margin:10px 0;"></div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button id="btnEditSave" onclick="enregistrerModification()" style="flex:1; background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">💾 Enregistrer</button>
+            <button onclick="fermerEditModal()" style="flex:1; background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">❌ Annuler</button>
         </div>
     </div>
 </div>
@@ -86,6 +105,31 @@
         color: #1e3a8a;
         margin: 0;
     }
+    .btn-modifier {
+        background: #ffc107;
+        color: #333;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-right: 5px;
+    }
+    .btn-modifier:hover {
+        background: #e0a800;
+    }
+    .btn-supprimer {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .btn-supprimer:hover {
+        background: #c82333;
+    }
     @media (max-width: 768px) {
         .card h2 {
             font-size: 18px;
@@ -100,6 +144,7 @@
 <script>
     let tousProduits = [];
     
+    // ========== CHARGER LE CATALOGUE ==========
     function chargerCatalogue() {
         fetch('/api/get_produits')
             .then(response => response.json())
@@ -109,11 +154,12 @@
             });
     }
     
+    // ========== AFFICHER LES PRODUITS ==========
     function afficher(produits) {
         var tbody = document.getElementById('catalogueBody');
         tbody.innerHTML = '';
         if (produits.length === 0) { 
-            tbody.innerHTML = '<tr><td colspan="8">Aucun produit<\/td><\/tr>'; 
+            tbody.innerHTML = '<tr><td colspan="8">Aucun produit</td></tr>'; 
             return; 
         }
         
@@ -127,16 +173,176 @@
             row.insertCell(5).textContent = (p.stock || 0).toLocaleString();
             row.insertCell(6).textContent = p.seuil || 0;
             
-            var btn = document.createElement('button');
-            btn.textContent = '🗑️ Supprimer';
-            btn.style = 'background:#dc3545; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;';
-            btn.onclick = (function(nom) {
-                return function() { supprimerProduit(nom); };
-            })(p.nom);
-            row.insertCell(7).appendChild(btn);
+            // ✅ Colonne Action avec Modifier + Supprimer
+            var actionsCell = row.insertCell(7);
+            actionsCell.innerHTML = `
+                <button class="btn-modifier" onclick="openEditModal('${p.id}')">✏️ Modifier</button>
+                <button class="btn-supprimer" onclick="supprimerProduit('${p.nom}')">🗑️</button>
+            `;
         });
     }
     
+    // ========== RECHERCHER ==========
+    function rechercher() {
+        var terme = document.getElementById('searchInput').value.toLowerCase();
+        if (!terme) { 
+            afficher(tousProduits); 
+            return; 
+        }
+        var filtres = tousProduits.filter(p => p.nom && p.nom.toLowerCase().includes(terme));
+        afficher(filtres);
+    }
+    
+    function reinitialiser() {
+        document.getElementById('searchInput').value = '';
+        afficher(tousProduits);
+    }
+    
+    // ========== AJOUTER UN PRODUIT ==========
+    function ouvrirModalAjout() {
+        document.getElementById('modalAjout').style.display = 'flex';
+        document.getElementById('modalNom').value = '';
+        document.getElementById('modalCategorie').value = '';
+        document.getElementById('modalPrixAchat').value = '';
+        document.getElementById('modalPrixVente').value = '';
+        document.getElementById('modalStock').value = '';
+        document.getElementById('modalSeuil').value = '';
+    }
+    
+function fermerModal() {
+    // ✅ RÉACTIVER LE BOUTON
+    var btn = document.getElementById('btnAjouterSave');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Ajouter';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    }
+    
+    // Cacher le modal
+    document.getElementById('modalAjout').style.display = 'none';
+}
+    
+function ajouterProduit() {
+    var nom = document.getElementById('modalNom').value.trim();
+    var categorie = document.getElementById('modalCategorie').value.trim();
+    var prixAchat = parseFloat(document.getElementById('modalPrixAchat').value);
+    var prixVente = parseFloat(document.getElementById('modalPrixVente').value);
+    var stock = parseInt(document.getElementById('modalStock').value) || 0;
+    var seuil = parseInt(document.getElementById('modalSeuil').value) || 10;
+    
+    // Validation
+    if (!nom) {
+        alert('Le nom du produit est obligatoire');
+        return;
+    }
+    if (!prixAchat || prixAchat <= 0) {
+        alert('Le prix d\'achat est obligatoire et doit être supérieur à 0');
+        return;
+    }
+    if (!prixVente || prixVente <= 0) {
+        alert('Le prix de vente est obligatoire et doit être supérieur à 0');
+        return;
+    }
+    
+    // ✅ DÉSACTIVER LE BOUTON
+    var btn = document.getElementById('btnAjouterSave');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Ajout en cours...';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    }
+    
+    var msgDiv = document.getElementById('ajoutMessage');
+    if (!msgDiv) {
+        // Créer le message si inexistant
+        var modal = document.querySelector('#modalAjout > div');
+        var newMsg = document.createElement('div');
+        newMsg.id = 'ajoutMessage';
+        newMsg.style.display = 'none';
+        newMsg.style.padding = '10px';
+        newMsg.style.borderRadius = '8px';
+        newMsg.style.margin = '10px 0';
+        modal.insertBefore(newMsg, modal.querySelector('div:last-child'));
+        msgDiv = newMsg;
+    }
+    
+    msgDiv.style.display = 'block';
+    msgDiv.innerHTML = '⏳ Ajout du produit en cours...';
+    msgDiv.style.background = '#d1ecf1';
+    msgDiv.style.color = '#0c5460';
+    
+    var produit = {
+        nom: nom,
+        categorie: categorie,
+        prixAchat: prixAchat,
+        prixVente: prixVente,
+        stock: stock,
+        seuil: seuil
+    };
+    
+    fetch('/api/ajouter_produit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(produit)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            msgDiv.innerHTML = '✅ ' + data.message;
+            msgDiv.style.background = '#d4edda';
+            msgDiv.style.color = '#155724';
+            
+            // Réinitialiser le formulaire
+            document.getElementById('modalNom').value = '';
+            document.getElementById('modalCategorie').value = '';
+            document.getElementById('modalPrixAchat').value = '';
+            document.getElementById('modalPrixVente').value = '';
+            document.getElementById('modalStock').value = '';
+            document.getElementById('modalSeuil').value = '';
+            
+            // Fermer le modal après 1.5 secondes
+            setTimeout(function() {
+                fermerModal();
+                chargerCatalogue();
+                var msg = document.getElementById('catalogueMessage');
+                if (msg) {
+                    msg.innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ ' + data.message + '</div>';
+                    setTimeout(function() { msg.innerHTML = ''; }, 3000);
+                }
+            }, 1500);
+            
+        } else {
+            msgDiv.innerHTML = '❌ ' + data.error;
+            msgDiv.style.background = '#f8d7da';
+            msgDiv.style.color = '#721c24';
+            
+            // ✅ RÉACTIVER LE BOUTON EN CAS D'ERREUR
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Ajouter';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        }
+    })
+    .catch(function(error) {
+        msgDiv.innerHTML = '❌ Erreur réseau: ' + error;
+        msgDiv.style.background = '#f8d7da';
+        msgDiv.style.color = '#721c24';
+        
+        // ✅ RÉACTIVER LE BOUTON EN CAS D'ERREUR
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '✅ Ajouter';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+    });
+}
+
+    // ========== SUPPRIMER UN PRODUIT ==========
     function supprimerProduit(nom) {
         if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${nom}" ?\n\nCette action est irréversible !`)) {
             return;
@@ -159,61 +365,120 @@
         });
     }
     
-    function rechercher() {
-        var terme = document.getElementById('searchInput').value.toLowerCase();
-        if (!terme) { 
-            afficher(tousProduits); 
-            return; 
+    // ========== MODIFIER UN PRODUIT ==========
+    function openEditModal(produitId) {
+        var produit = tousProduits.find(p => p.id === produitId);
+        if (!produit) {
+            alert('Produit non trouvé');
+            return;
         }
-        var filtres = tousProduits.filter(p => p.nom && p.nom.toLowerCase().includes(terme));
-        afficher(filtres);
-    }
-    
-    function reinitialiser() {
-        document.getElementById('searchInput').value = '';
-        afficher(tousProduits);
-    }
-    
-    function ouvrirModalAjout() {
-        document.getElementById('modalAjout').style.display = 'flex';
-    }
-    
-    function fermerModal() {
-        document.getElementById('modalAjout').style.display = 'none';
-    }
-    
-    function ajouterProduit() {
-        var produit = {
-            nom: document.getElementById('modalNom').value,
-            categorie: document.getElementById('modalCategorie').value,
-            prixAchat: parseFloat(document.getElementById('modalPrixAchat').value),
-            prixVente: parseFloat(document.getElementById('modalPrixVente').value),
-            stock: parseInt(document.getElementById('modalStock').value) || 0,
-            seuil: parseInt(document.getElementById('modalSeuil').value) || 10
-        };
         
-        fetch('/api/ajouter_produit', {
+        document.getElementById('editId').value = produit.id;
+        document.getElementById('editNom').value = produit.nom || '';
+        document.getElementById('editCategorie').value = produit.categorie || '';
+        document.getElementById('editPrixAchat').value = produit.prixAchat || 0;
+        document.getElementById('editPrixVente').value = produit.prixVente || 0;
+        document.getElementById('editStock').value = produit.stock || 0;
+        document.getElementById('editSeuil').value = produit.seuil || 10;
+        
+        document.getElementById('editMessage').style.display = 'none';
+        document.getElementById('modalEdit').style.display = 'flex';
+        
+        // Réactiver le bouton si désactivé
+        var btn = document.getElementById('btnEditSave');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '💾 Enregistrer';
+        }
+    }
+    
+    function fermerEditModal() {
+        document.getElementById('modalEdit').style.display = 'none';
+    }
+    
+    function enregistrerModification() {
+        var id = document.getElementById('editId').value;
+        var nom = document.getElementById('editNom').value.trim();
+        var categorie = document.getElementById('editCategorie').value.trim();
+        var prixAchat = parseFloat(document.getElementById('editPrixAchat').value) || 0;
+        var prixVente = parseFloat(document.getElementById('editPrixVente').value) || 0;
+        var stock = parseInt(document.getElementById('editStock').value) || 0;
+        var seuil = parseInt(document.getElementById('editSeuil').value) || 10;
+        
+        // Validation
+        if (!nom) {
+            alert('Le nom du produit est obligatoire');
+            return;
+        }
+        
+        if (prixVente <= 0) {
+            alert('Le prix de vente doit être supérieur à 0');
+            return;
+        }
+        
+        var msgDiv = document.getElementById('editMessage');
+        msgDiv.style.display = 'block';
+        msgDiv.innerHTML = '⏳ Enregistrement en cours...';
+        msgDiv.style.background = '#d1ecf1';
+        msgDiv.style.color = '#0c5460';
+        
+        // Désactiver le bouton
+        var btn = document.getElementById('btnEditSave');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Enregistrement...';
+        }
+        
+        fetch('/api/modifier_produit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(produit)
+            body: JSON.stringify({
+                id: id,
+                nom: nom,
+                categorie: categorie,
+                prixAchat: prixAchat,
+                prixVente: prixVente,
+                stock: stock,
+                seuil: seuil
+            })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
-                fermerModal();
-                chargerCatalogue();
-                document.getElementById('modalNom').value = '';
-                document.getElementById('modalCategorie').value = '';
-                document.getElementById('modalPrixAchat').value = '';
-                document.getElementById('modalPrixVente').value = '';
-                document.getElementById('modalStock').value = '';
-                document.getElementById('modalSeuil').value = '';
+                msgDiv.innerHTML = '✅ ' + data.message;
+                msgDiv.style.background = '#d4edda';
+                msgDiv.style.color = '#155724';
+                
+                setTimeout(function() {
+                    fermerEditModal();
+                    chargerCatalogue();
+                    document.getElementById('catalogueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ ' + data.message + '</div>';
+                    setTimeout(() => { document.getElementById('catalogueMessage').innerHTML = ''; }, 3000);
+                }, 1500);
             } else {
-                alert('Erreur: ' + data.error);
+                msgDiv.innerHTML = '❌ ' + data.error;
+                msgDiv.style.background = '#f8d7da';
+                msgDiv.style.color = '#721c24';
+                
+                // Réactiver le bouton en cas d'erreur
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '💾 Enregistrer';
+                }
+            }
+        })
+        .catch(function(error) {
+            msgDiv.innerHTML = '❌ Erreur réseau: ' + error;
+            msgDiv.style.background = '#f8d7da';
+            msgDiv.style.color = '#721c24';
+            
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '💾 Enregistrer';
             }
         });
     }
     
+    // ========== INITIALISATION ==========
     chargerCatalogue();
 </script>

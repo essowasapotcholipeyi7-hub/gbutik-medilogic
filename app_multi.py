@@ -695,6 +695,18 @@ def api_get_caisse_jour():
     for i in range(1, len(data)):
         row = data[i]
         if len(row) > 1 and row[1] == aujourd_hui:
+            
+            # ✅ VÉRIFICATION : Ignorer les ventes annulées (colonne J = index 9)
+            est_annulee = False
+            try:
+                if len(row) > 9 and row[9] == '1':
+                    est_annulee = True
+            except:
+                pass
+            
+            if est_annulee:
+                continue  # ← On saute cette vente, elle ne sera pas comptée
+            
             try:
                 def to_float(val):
                     try:
@@ -737,6 +749,7 @@ def api_get_caisse_jour():
         'date': aujourd_hui,
         'ventes': ventes_jour
     })
+
 @app.route('/api/get_vendeurs')
 def api_get_vendeurs():
     if 'boutique_id' not in session:
@@ -1774,6 +1787,70 @@ def admin_reset_password():
         return jsonify({'success': False, 'error': 'Vendeur non trouvé'})
     
     return jsonify({'success': False, 'error': 'Rôle invalide'})
+
+@app.route('/api/modifier_produit', methods=['POST'])
+def api_modifier_produit():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'})
+    
+    data = request.get_json()
+    boutique_id = session['boutique_id']
+    produit_id = data.get('id')
+    
+    try:
+        # 1. Modifier dans le catalogue
+        catalogue_sheet = get_sheet(boutique_id, 'catalogue')
+        if not catalogue_sheet:
+            return jsonify({'success': False, 'error': 'Feuille catalogue non trouvée'})
+        
+        cat_data = catalogue_sheet.get_all_values()
+        ligne_trouvee = -1
+        
+        for i in range(1, len(cat_data)):
+            if len(cat_data[i]) > 0 and cat_data[i][0] == produit_id:
+                ligne_trouvee = i + 1
+                break
+        
+        if ligne_trouvee == -1:
+            return jsonify({'success': False, 'error': 'Produit non trouvé dans le catalogue'})
+        
+        # Mettre à jour le catalogue
+        catalogue_sheet.update_cell(ligne_trouvee, 2, data.get('nom'))
+        catalogue_sheet.update_cell(ligne_trouvee, 3, data.get('categorie', ''))
+        catalogue_sheet.update_cell(ligne_trouvee, 4, data.get('prixAchat', 0))
+        catalogue_sheet.update_cell(ligne_trouvee, 5, data.get('prixVente', 0))
+        catalogue_sheet.update_cell(ligne_trouvee, 6, data.get('stock', 0))
+        catalogue_sheet.update_cell(ligne_trouvee, 7, data.get('seuil', 10))
+        
+        # 2. Modifier dans le stock
+        stock_sheet = get_sheet(boutique_id, 'stock')
+        if stock_sheet:
+            stock_data = stock_sheet.get_all_values()
+            for i in range(1, len(stock_data)):
+                if len(stock_data[i]) > 0 and stock_data[i][0] == produit_id:
+                    stock_sheet.update_cell(i+1, 2, data.get('nom'))
+                    stock_sheet.update_cell(i+1, 3, data.get('stock', 0))
+                    stock_sheet.update_cell(i+1, 4, data.get('seuil', 10))
+                    break
+        
+        # 3. Journal
+        journal_sheet = get_sheet(boutique_id, 'journal')
+        if journal_sheet:
+            journal_sheet.append_row([
+                datetime.now().strftime('%d/%m/%Y'),
+                datetime.now().strftime('%H:%M:%S'),
+                'MODIFICATION_PRODUIT',
+                data.get('nom'),
+                0, 0, 0,
+                session.get('user_nom', 'Gérant'),
+                f"Produit modifié: {data.get('nom')}"
+            ])
+        
+        return jsonify({'success': True, 'message': f'Produit "{data.get("nom")}" modifié avec succès'})
+        
+    except Exception as e:
+        print(f"❌ Erreur modification: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     import os
