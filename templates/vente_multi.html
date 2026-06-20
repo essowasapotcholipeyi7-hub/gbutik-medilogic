@@ -50,7 +50,7 @@
             <div style="font-size: 32px; font-weight: bold;" id="total">0 FCFA</div>
         </div>
         
-        <button id="btnValiderVente" onclick="validerVente()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
+        <button id="btnValiderVente" onclick="afficherRecapVente()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:bold; cursor:pointer;">
             ✅ Valider la vente
         </button>
     </div>
@@ -373,51 +373,140 @@
             });
     }
     
-    function mettreAJourListes() {
-        var select = document.getElementById('produitSelect');
-        var selectPanier = document.getElementById('produitPanier');
-        select.innerHTML = '<option value="">Sélectionnez un produit</option>';
-        selectPanier.innerHTML = '<option value="">Sélectionnez un produit</option>';
-        
-        produitsFiltresUnique.forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.nom;
-            opt.textContent = p.nom + ' (Stock: ' + p.stock + ')';
-            select.appendChild(opt);
-        });
-        
-        produitsFiltresPanier.forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.nom;
-            opt.textContent = p.nom + ' (Stock: ' + p.stock + ')';
-            selectPanier.appendChild(opt);
-        });
-    }
+function mettreAJourListes() {
+    var select = document.getElementById('produitSelect');
+    var selectPanier = document.getElementById('produitPanier');
     
-    function filtrerProduitsUnique() {
-        var searchTerm = document.getElementById('searchProduitUnique').value.toLowerCase();
-        if (!searchTerm) {
-            produitsFiltresUnique = [...tousProduits];
-        } else {
-            produitsFiltresUnique = tousProduits.filter(p => 
-                p.nom && p.nom.toLowerCase().includes(searchTerm)
-            );
+    select.innerHTML = '<option value="">Sélectionnez un produit</option>';
+    selectPanier.innerHTML = '<option value="">Sélectionnez un produit</option>';
+    
+    tousProduits.forEach(function(p) {
+        // Pour la vente unique
+        var opt1 = document.createElement('option');
+        opt1.value = p.nom;
+        var stockText1 = p.stock > 0 ? 'Stock: ' + p.stock : '⚠️ Rupture de stock';
+        opt1.textContent = p.nom + ' (' + stockText1 + ')';
+        if (p.stock <= 0) {
+            opt1.disabled = true;
+            opt1.style.color = '#dc3545';
         }
-        mettreAJourListes();
-    }
-    
-    function filtrerProduitsPanier() {
-        var searchTerm = document.getElementById('searchProduitPanier').value.toLowerCase();
-        if (!searchTerm) {
-            produitsFiltresPanier = [...tousProduits];
-        } else {
-            produitsFiltresPanier = tousProduits.filter(p => 
-                p.nom && p.nom.toLowerCase().includes(searchTerm)
-            );
+        select.appendChild(opt1);
+        
+        // Pour le panier
+        var opt2 = document.createElement('option');
+        opt2.value = p.nom;
+        var stockText2 = p.stock > 0 ? 'Stock: ' + p.stock : '⚠️ Rupture de stock';
+        opt2.textContent = p.nom + ' (' + stockText2 + ')';
+        if (p.stock <= 0) {
+            opt2.disabled = true;
+            opt2.style.color = '#dc3545';
         }
-        mettreAJourListes();
+        selectPanier.appendChild(opt2);
+    });
+}    
+function filtrerProduitsUnique() {
+    var searchTerm = document.getElementById('searchProduitUnique').value.toLowerCase().trim();
+    var select = document.getElementById('produitSelect');
+    var searchInput = document.getElementById('searchProduitUnique');
+    
+    // Vider la liste déroulante
+    select.innerHTML = '<option value="">Sélectionnez un produit</option>';
+    
+    // Filtrer les produits
+    var produitsFiltres;
+    if (!searchTerm) {
+        produitsFiltres = tousProduits;
+    } else {
+        produitsFiltres = tousProduits.filter(p => 
+            p.nom && p.nom.toLowerCase().includes(searchTerm)
+        );
     }
     
+    // Ajouter les produits filtrés
+    produitsFiltres.forEach(function(p) {
+        var opt = document.createElement('option');
+        opt.value = p.nom;
+        var stockText = p.stock > 0 ? 'Stock: ' + p.stock : '⚠️ Rupture de stock';
+        opt.textContent = p.nom + ' (' + stockText + ')';
+        if (p.stock <= 0) {
+            opt.disabled = true;
+            opt.style.color = '#dc3545';
+        }
+        select.appendChild(opt);
+    });
+    
+    // Afficher la liste sans perdre le focus
+    if (searchTerm && produitsFiltres.length > 0) {
+        select.size = Math.min(produitsFiltres.length + 1, 10);
+    } else {
+        select.size = 1;
+    }
+    
+    // ✅ GARDER LE FOCUS SUR LA BARRE DE RECHERCHE
+    // Utiliser setTimeout pour s'assurer que le focus revient après le rendu
+    setTimeout(function() {
+        searchInput.focus();
+        // Placer le curseur à la fin du texte
+        var len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+    }, 10);
+    
+    // Réinitialiser les champs
+    document.getElementById('prixVendu').value = '';
+    document.getElementById('stockDispo').value = '';
+    document.getElementById('total').innerHTML = '0 FCFA';
+}
+
+function filtrerProduitsPanier() {
+    var searchTerm = document.getElementById('searchProduitPanier').value.toLowerCase().trim();
+    var select = document.getElementById('produitPanier');
+    var searchInput = document.getElementById('searchProduitPanier');
+    
+    // Vider la liste déroulante
+    select.innerHTML = '<option value="">Sélectionnez un produit</option>';
+    
+    // Filtrer les produits
+    var produitsFiltres;
+    if (!searchTerm) {
+        produitsFiltres = tousProduits;
+    } else {
+        produitsFiltres = tousProduits.filter(p => 
+            p.nom && p.nom.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    // Ajouter les produits filtrés
+    produitsFiltres.forEach(function(p) {
+        var opt = document.createElement('option');
+        opt.value = p.nom;
+        var stockText = p.stock > 0 ? 'Stock: ' + p.stock : '⚠️ Rupture de stock';
+        opt.textContent = p.nom + ' (' + stockText + ')';
+        if (p.stock <= 0) {
+            opt.disabled = true;
+            opt.style.color = '#dc3545';
+        }
+        select.appendChild(opt);
+    });
+    
+    // Afficher la liste sans perdre le focus
+    if (searchTerm && produitsFiltres.length > 0) {
+        select.size = Math.min(produitsFiltres.length + 1, 10);
+    } else {
+        select.size = 1;
+    }
+    
+    // ✅ GARDER LE FOCUS SUR LA BARRE DE RECHERCHE
+    setTimeout(function() {
+        searchInput.focus();
+        var len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+    }, 10);
+    
+    // Réinitialiser les champs
+    document.getElementById('prixPanier').value = '';
+    document.getElementById('stockDispoPanier').value = '';
+}
+
     function updateProduitInfo() {
         var produit = document.getElementById('produitSelect').value;
         var p = tousProduits.find(x => x.nom === produit);
@@ -470,6 +559,59 @@
         document.getElementById('total').innerHTML = total.toLocaleString() + ' FCFA';
     }
     
+// ========== SELECTIONNER PRODUIT AVEC ENTRÉE ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Recherche vente unique - sélection avec Entrée
+    var searchUnique = document.getElementById('searchProduitUnique');
+    if (searchUnique) {
+        searchUnique.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                var select = document.getElementById('produitSelect');
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1;
+                    updateProduitInfo();
+                    select.size = 1;
+                    // Fermer la liste déroulante
+                    document.getElementById('searchProduitUnique').blur();
+                    document.getElementById('searchProduitUnique').focus();
+                }
+            }
+        });
+    }
+    
+    // Recherche panier - sélection avec Entrée
+    var searchPanier = document.getElementById('searchProduitPanier');
+    if (searchPanier) {
+        searchPanier.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                var select = document.getElementById('produitPanier');
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1;
+                    updateProduitPanierInfo();
+                    select.size = 1;
+                    document.getElementById('searchProduitPanier').blur();
+                    document.getElementById('searchProduitPanier').focus();
+                }
+            }
+        });
+    }
+    
+    // Fermer la liste quand on clique ailleurs
+    document.addEventListener('click', function(e) {
+        var selectUnique = document.getElementById('produitSelect');
+        var selectPanier = document.getElementById('produitPanier');
+        var searchUnique = document.getElementById('searchProduitUnique');
+        var searchPanier = document.getElementById('searchProduitPanier');
+        
+        if (selectUnique && !selectUnique.contains(e.target) && !searchUnique.contains(e.target)) {
+            selectUnique.size = 1;
+        }
+        if (selectPanier && !selectPanier.contains(e.target) && !searchPanier.contains(e.target)) {
+            selectPanier.size = 1;
+        }
+    });
+});
+
     function afficherRecu(venteData) {
     // Remplir les infos du ticket
     document.getElementById('recuNumero').innerHTML = venteData.numero || '---';
@@ -576,7 +718,59 @@ function imprimerRecu() {
     `);
     printWindow.document.close();
 }
+
+function afficherRecapVente() {
+    var produit = document.getElementById('produitSelect').value;
+    var quantite = parseInt(document.getElementById('quantite').value) || 0;
+    var prixVendu = parseFloat(document.getElementById('prixVendu').value) || 0;
+    var remise = parseFloat(document.getElementById('remise').value) || 0;
+    var total = (quantite * prixVendu) - remise;
+    if (total < 0) total = 0;
     
+    if (!produit) {
+        alert('Veuillez sélectionner un produit');
+        return;
+    }
+    if (quantite <= 0) {
+        alert('Quantité invalide');
+        return;
+    }
+    if (prixVendu <= 0) {
+        alert('Prix de vente invalide');
+        return;
+    }
+    
+    // Vérifier le stock
+    var p = tousProduits.find(x => x.nom === produit);
+    if (p && quantite > p.stock) {
+        alert(`⚠️ Stock insuffisant !\nStock disponible: ${p.stock} unités\nDemandé: ${quantite} unités`);
+        return;
+    }
+    
+    // Construire le message de récapitulatif
+    var msg = "🛒 Récapitulatif de la vente :\n\n";
+    msg += "📦 Produit : " + produit + "\n";
+    msg += "🔢 Quantité : " + quantite + "\n";
+    msg += "💰 Prix unitaire : " + prixVendu.toLocaleString() + " FCFA\n";
+    msg += "💵 Total brut : " + (quantite * prixVendu).toLocaleString() + " FCFA\n";
+    if (remise > 0) {
+        msg += "🎁 Remise : " + remise.toLocaleString() + " FCFA\n";
+    }
+    msg += "\n✅ Total à payer : " + total.toLocaleString() + " FCFA";
+    
+    // Afficher le stock restant
+    if (p) {
+        msg += "\n\n📊 Stock restant après vente : " + (p.stock - quantite) + " unités";
+    }
+    
+    msg += "\n\nConfirmer la vente ?";
+    
+    if (!confirm(msg)) return;
+    
+    // Si confirmé, appeler la fonction de validation
+    validerVente();
+}
+
 function validerVente() {
     var produit = document.getElementById('produitSelect').value;
     var quantite = parseInt(document.getElementById('quantite').value);
