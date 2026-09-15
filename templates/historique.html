@@ -1,17 +1,17 @@
 <div class="card">
-  <h2>📜 Historique des ventes</h2>
+  <h2>Historique des ventes</h2>
   <div id="historiqueMessage"></div>
 
   <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-    <input type="text" id="searchFilter" placeholder="🔍 Produit ou vendeur..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-    <button onclick="filtrerVentes()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px;">🔍 Filtrer</button>
-    <button onclick="resetFiltres()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Réinitialiser</button>
+    <input type="text" id="searchFilter" placeholder="Produit ou vendeur..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+    <button onclick="filtrerVentes()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px;">Filtrer</button>
+    <button onclick="resetFiltres()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px;">Réinitialiser</button>
   </div>
 
   <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>💰 Total CA:</strong> <span id="totalCA">0</span> FCFA</div>
-    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>📦 Nombre ventes:</strong> <span id="totalVentes">0</span></div>
-    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>🔢 Produits vendus:</strong> <span id="totalProduits">0</span></div>
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>Total CA:</strong> <span id="totalCA">0</span> FCFA</div>
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>Nombre ventes:</strong> <span id="totalVentes">0</span></div>
+    <div style="background:#1e3a8a; color:white; padding:10px 20px; border-radius:10px;"><strong>Produits vendus:</strong> <span id="totalProduits">0</span></div>
   </div>
 
   <div class="table-container">
@@ -20,7 +20,7 @@
       <tbody id="historiqueBody"><tr><td colspan="8">Chargement...</td></tr></tbody>
     </table>
   </div>
-  <button onclick="chargerHistorique()" style="margin-top:15px; background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Actualiser</button>
+  <button onclick="chargerHistorique()" style="margin-top:15px; background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">Actualiser</button>
 </div>
 
 <style>

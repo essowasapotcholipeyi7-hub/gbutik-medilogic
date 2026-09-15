@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📥 Approvisionnement - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Approvisionnement - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -11,13 +11,13 @@
     
     <!-- Barre de recherche -->
     <div style="margin-bottom: 15px;">
-        <input type="text" id="searchProduitAppro" placeholder="🔍 Rechercher un produit..." 
+        <input type="text" id="searchProduitAppro" placeholder="Rechercher un produit..." 
                style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" 
                onkeyup="filtrerProduitsAppro()">
     </div>
     
     <div class="form-group">
-        <label>📦 Produit</label>
+        <label>Produit</label>
         <select id="produitAppro" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateStockActuel()">
             <option value="">Sélectionnez un produit</option>
         </select>
@@ -25,23 +25,23 @@
     
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
         <div class="form-group">
-            <label>📊 Stock actuel</label>
+            <label>Stock actuel</label>
             <input type="text" id="stockActuel" readonly style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; background:#f5f5f5;">
         </div>
         <div class="form-group">
-            <label>🔢 Quantité à ajouter</label>
+            <label>Quantité à ajouter</label>
             <input type="number" id="quantiteAppro" min="1" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
         </div>
     </div>
     
     <div class="form-group">
-        <label>🏭 Fournisseur (optionnel)</label>
+        <label>Fournisseur (optionnel)</label>
         <input type="text" id="fournisseur" placeholder="Nom du fournisseur" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
     </div>
     
-    <button onclick="approvisionner()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; margin-top:20px; cursor:pointer;">✅ Valider l'approvisionnement</button>
+    <button onclick="approvisionner()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:14px; margin-top:20px; cursor:pointer;">Valider l'approvisionnement</button>
     
-    <h3 style="margin-top: 30px;">📋 Derniers approvisionnements</h3>
+    <h3 style="margin-top: 30px;">Derniers approvisionnements</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -136,7 +136,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('approMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">✅ ' + data.message + '</div>';
+                document.getElementById('approMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">' + data.message + '</div>';
                 document.getElementById('quantiteAppro').value = '';
                 document.getElementById('fournisseur').value = '';
                 document.getElementById('produitAppro').value = '';

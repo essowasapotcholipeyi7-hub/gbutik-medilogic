@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour en haut à droite -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📓 Journal des mouvements - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Journal des mouvements - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -17,8 +17,8 @@
             <option value="APPROVISIONNEMENT">Approvisionnements</option>
             <option value="ANNULATION_VENTE">Annulations</option>
         </select>
-        <button onclick="appliquerFiltre()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍 Filtrer</button>
-        <button onclick="reinitialiserFiltre()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Réinitialiser</button>
+        <button onclick="appliquerFiltre()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Filtrer</button>
+        <button onclick="reinitialiserFiltre()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Réinitialiser</button>
     </div>
 
     <div class="table-container">
@@ -35,7 +35,7 @@
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
-        <button onclick="chargerJournal()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="chargerJournal()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
     </div>
 </div>
 

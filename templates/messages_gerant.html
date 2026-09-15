@@ -1,5 +1,5 @@
 <div class="card">
-    <h2>💬 Messagerie - Gérant</h2>
+    <h2>Messagerie - Gérant</h2>
     <div id="messageResult"></div>
     
     <div class="stats-messages">
@@ -21,7 +21,7 @@
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
-        <button onclick="chargerMessages()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="chargerMessages()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
@@ -34,12 +34,12 @@
 <!-- Modal pour répondre -->
 <div id="modalReponse" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:500px;">
-        <h3>✏️ Répondre au message</h3>
+        <h3>Répondre au message</h3>
         <div id="reponseInfo" style="background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:15px;"></div>
         <textarea id="reponseMessage" rows="4" placeholder="Votre réponse..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;"></textarea>
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="envoyerReponse()" style="flex:1; background:#28a745; color:white; border:none; border-radius:8px; padding:10px;">✅ Envoyer</button>
-            <button onclick="fermerModal()" style="flex:1; background:#6c757d; color:white; border:none; border-radius:8px; padding:10px;">❌ Annuler</button>
+            <button onclick="envoyerReponse()" style="flex:1; background:#28a745; color:white; border:none; border-radius:8px; padding:10px;">Envoyer</button>
+            <button onclick="fermerModal()" style="flex:1; background:#6c757d; color:white; border:none; border-radius:8px; padding:10px;">Annuler</button>
         </div>
     </div>
 </div>
@@ -85,10 +85,10 @@
                     row.insertCell(1).textContent = m.heure || '';
                     row.insertCell(2).innerHTML = '<strong>' + (m.expediteur || '-') + '</strong>';
                     row.insertCell(3).innerHTML = '<div style="max-width:250px; word-wrap:break-word;">' + (m.message || '') + '</div>';
-                    row.insertCell(4).innerHTML = m.lu === 'OUI' ? '<span class="status-lu">✅ Lu</span>' : '<span class="status-non-lu">⏳ Non lu</span>';
+                    row.insertCell(4).innerHTML = m.lu === 'OUI' ? '<span class="status-lu">Lu</span>' : '<span class="status-non-lu">⏳ Non lu</span>';
                     
                     var btn = document.createElement('button');
-                    btn.textContent = '✏️ Répondre';
+                    btn.textContent = 'Répondre';
                     btn.className = 'btn-repondre';
                     btn.onclick = (function(msg) {
                         return function() { ouvrirReponse(msg); };
@@ -104,8 +104,8 @@
     function ouvrirReponse(message) {
         messageEnCours = message;
         document.getElementById('reponseInfo').innerHTML = `
-            <strong>📩 De:</strong> ${message.expediteur}<br>
-            <strong>💬 Message:</strong> ${message.message}
+            <strong>De:</strong> ${message.expediteur}<br>
+            <strong>Message:</strong> ${message.message}
         `;
         document.getElementById('reponseMessage').value = '';
         document.getElementById('modalReponse').style.display = 'flex';
@@ -138,7 +138,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ Réponse envoyée !');
+                alert('Réponse envoyée !');
                 fermerModal();
                 chargerMessages();
             } else {

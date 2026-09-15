@@ -1,5 +1,5 @@
 <div class="card">
-    <h2>🧾 Créances clients - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <h2>Créances clients - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
     <div id="creanceMessage"></div>
 
     <div class="stats">
@@ -12,7 +12,7 @@
         <label style="font-size:13px; color:#666;"><input type="checkbox" id="filtreOuvertes" checked onchange="chargerCreances()"> Afficher uniquement les créances non soldées</label>
     </div>
 
-    <h3>📋 Liste des créances</h3>
+    <h3>Liste des créances</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -71,9 +71,9 @@
     let creancesCache = [];
 
     function statutBadge(statut) {
-        if (statut === 'SOLDEE') return '<span class="badge badge-soldee">✅ Soldée</span>';
-        if (statut === 'PARTIELLE') return '<span class="badge badge-partielle">🟡 Partielle</span>';
-        return '<span class="badge badge-ouverte">🔴 Ouverte</span>';
+        if (statut === 'SOLDEE') return '<span class="badge badge-soldee">Soldée</span>';
+        if (statut === 'PARTIELLE') return '<span class="badge badge-partielle">Partielle</span>';
+        return '<span class="badge badge-ouverte">Ouverte</span>';
     }
 
     function enregistrerPaiement(creanceId, restant) {
@@ -92,11 +92,11 @@
         .then(data => {
             var msgDiv = document.getElementById('creanceMessage');
             if (data.success) {
-                msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">✅ ' + data.message + '</div>';
+                msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.message + '</div>';
                 chargerCreances();
                 chargerPaiementsAttente();
             } else {
-                msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">❌ ' + data.error + '</div>';
+                msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.error + '</div>';
             }
         });
     }
@@ -135,7 +135,7 @@
                     if (c.statut !== 'SOLDEE') {
                         var btn = document.createElement('button');
                         btn.className = 'btn-action btn-payer';
-                        btn.textContent = '💰 Enregistrer paiement';
+                        btn.textContent = 'Enregistrer paiement';
                         btn.onclick = function() { enregistrerPaiement(c.id, c.montantRestant); };
                         actionCell.appendChild(btn);
                     } else {
@@ -194,11 +194,11 @@
                     if (userRole !== 'vendeur') {
                         var btnV = document.createElement('button');
                         btnV.className = 'btn-action btn-valider';
-                        btnV.textContent = '✅ Valider';
+                        btnV.textContent = 'Valider';
                         btnV.onclick = function() { traiterPaiement(p.referenceId, 'valider'); };
                         var btnR = document.createElement('button');
                         btnR.className = 'btn-action btn-refuser';
-                        btnR.textContent = '❌ Refuser';
+                        btnR.textContent = 'Refuser';
                         btnR.onclick = function() { traiterPaiement(p.referenceId, 'refuser'); };
                         actionCell.appendChild(btnV);
                         actionCell.appendChild(btnR);

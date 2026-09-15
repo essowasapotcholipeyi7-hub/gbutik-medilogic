@@ -1,5 +1,5 @@
 <div class="card">
-    <h2>📊 Caisse journalière - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <h2>Caisse journalière - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
     <div id="caisseMessage"></div>
     
     <div class="total-jour">
@@ -21,8 +21,8 @@
     </div>
 
     <div style="text-align:center; margin-bottom: 20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <a href="/charges" style="background:#dc3545; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">💸 Charges</a>
-        <a href="/creances" style="background:#f59e0b; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">🧾 Créances</a>
+        <a href="/charges" style="background:#dc3545; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">Charges</a>
+        <a href="/creances" style="background:#f59e0b; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">Créances</a>
     </div>
     
     <div class="table-container">
@@ -39,7 +39,7 @@
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
-        <button onclick="chargerCaisse()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="chargerCaisse()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
@@ -75,7 +75,7 @@
                 document.getElementById('totalVentesJour').innerHTML = (data.totalVentes || 0).toLocaleString();
                 document.getElementById('nbVentesJour').innerHTML = data.nbVentes || 0;
                 document.getElementById('remiseTotaleJour').innerHTML = (data.remiseTotale || 0).toLocaleString() + ' FCFA';
-                document.getElementById('dateJour').innerHTML = '📅 ' + (data.date || '');
+                document.getElementById('dateJour').innerHTML = '' + (data.date || '');
                 
                 var tbody = document.getElementById('caisseJourBody');
                 tbody.innerHTML = '';

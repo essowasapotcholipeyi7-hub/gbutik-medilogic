@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📊 Statistiques - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Statistiques - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -12,54 +12,54 @@
     <!-- Filtres -->
     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;">
         <div style="flex: 1; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📆 Période</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Période</label>
             <select id="periodeStat" onchange="changerPeriode()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-                <option value="jour">📅 Aujourd'hui</option>
-                <option value="semaine">📆 Cette semaine</option>
-                <option value="mois">📆 Ce mois</option>
-                <option value="annee">📆 Cette année</option>
-                <option value="personnalise">📅 Période personnalisée</option>
+                <option value="jour">Aujourd'hui</option>
+                <option value="semaine">Cette semaine</option>
+                <option value="mois">Ce mois</option>
+                <option value="annee">Cette année</option>
+                <option value="personnalise">Période personnalisée</option>
             </select>
         </div>
         <div id="dateDebutGroup" style="display: none; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date début</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Date début</label>
             <input type="date" id="dateDebut" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         <div id="dateFinGroup" style="display: none; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date fin</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Date fin</label>
             <input type="date" id="dateFin" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         <div>
-            <button onclick="chargerStatistiques()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+            <button onclick="chargerStatistiques()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
         </div>
     </div>
     
     <!-- Cartes KPI -->
     <div class="stats">
         <div class="stat-card">
-            <div class="stat-icon">💰</div>
+            <div class="stat-icon"></div>
             <h3 id="statChiffreAffaire">0</h3>
             <p>Chiffre d'affaires</p>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">📦</div>
+            <div class="stat-icon"></div>
             <h3 id="statNbVentes">0</h3>
             <p>Nombre de ventes</p>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">🔢</div>
+            <div class="stat-icon"></div>
             <h3 id="statNbProduits">0</h3>
             <p>Produits vendus</p>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">🎫</div>
+            <div class="stat-icon"></div>
             <h3 id="statTicketMoyen">0</h3>
             <p>Ticket moyen</p>
         </div>
     </div>
     
     <!-- Top produits -->
-    <h3>🏆 Top 5 produits les plus vendus</h3>
+    <h3>Top 5 produits les plus vendus</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -72,7 +72,7 @@
     </div>
     
     <!-- Top vendeurs -->
-    <h3>👥 Top 5 vendeurs</h3>
+    <h3>Top 5 vendeurs</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -209,7 +209,7 @@
             dateDebut = document.getElementById('dateDebut').value;
             dateFin = document.getElementById('dateFin').value;
             if (!dateDebut || !dateFin) {
-                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">❌ Veuillez sélectionner les deux dates</div>';
+                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">Veuillez sélectionner les deux dates</div>';
                 return;
             }
         }
@@ -254,7 +254,7 @@
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">❌ Erreur de chargement</div>';
+                document.getElementById('statMessage').innerHTML = '<div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;">Erreur de chargement</div>';
             });
     }
     

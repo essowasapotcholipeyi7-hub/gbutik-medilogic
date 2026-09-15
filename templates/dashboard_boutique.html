@@ -123,7 +123,7 @@
       color: var(--text-muted);
     }
     .user-info::before {
-      content: '👤';
+      content: '';
       font-size: 12px;
     }
 
@@ -491,7 +491,7 @@
 
   <header class="header">
     <div class="header-brand">
-      <div class="brand-mark">🏪</div>
+      <div class="brand-mark"></div>
       <div class="brand-text">
         <h1>GBoutik<span style="color:var(--accent)">·</span>MediLogic</h1>
         <span>{{ session.boutique_nom if session.boutique_nom else 'Espace de gestion' }}</span>
@@ -517,25 +517,25 @@
     <!-- Cartes KPI -->
     <div class="kpi-grid">
       <div class="kpi-card accent">
-        <div class="kpi-icon">💰</div>
+        <div class="kpi-icon"></div>
         <div class="kpi-label">CA aujourd'hui</div>
         <div class="kpi-value" id="caJour">—</div>
         <div class="kpi-unit">FCFA</div>
       </div>
       <div class="kpi-card gold">
-        <div class="kpi-icon">📈</div>
+        <div class="kpi-icon"></div>
         <div class="kpi-label">CA du mois</div>
         <div class="kpi-value" id="caMois">—</div>
         <div class="kpi-unit">FCFA</div>
       </div>
       <div class="kpi-card blue">
-        <div class="kpi-icon">📦</div>
+        <div class="kpi-icon"></div>
         <div class="kpi-label">Produits en stock</div>
         <div class="kpi-value" id="nbProduits">—</div>
         <div class="kpi-unit">références</div>
       </div>
       <div class="kpi-card warn">
-        <div class="kpi-icon">⚠</div>
+        <div class="kpi-icon"></div>
         <div class="kpi-label">Alertes stock</div>
         <div class="kpi-value" id="nbAlertes">—</div>
         <div class="kpi-unit">produits</div>
@@ -637,7 +637,7 @@
     function updateAlertes(produits) {
       const div = document.getElementById('alertesList');
       if (!produits || produits.length === 0) {
-        div.innerHTML = '<div class="empty-state">✓ Aucun produit en alerte</div>';
+        div.innerHTML = '<div class="empty-state">Aucun produit en alerte</div>';
         return;
       }
       div.innerHTML = produits.map(p => {
@@ -762,7 +762,7 @@
         zone.innerHTML = d.data.map(a => `
           <div class="alerte-item">
             <div>
-              <div class="alerte-nom">📱 ${escapeHtml(a.libelle_appareil || 'Appareil')}</div>
+              <div class="alerte-nom">${escapeHtml(a.libelle_appareil || 'Appareil')}</div>
               <div class="alerte-sous">Ajouté le ${a.date_creation || '-'} ${a.derniere_utilisation ? '· Utilisé le ' + a.derniere_utilisation : '· Jamais utilisé'}</div>
             </div>
             <span class="alerte-badge badge-rupture" style="cursor:pointer;" onclick="revoquerAppareil(${a.ligne})">Retirer</span>

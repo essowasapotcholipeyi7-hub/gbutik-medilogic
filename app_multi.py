@@ -233,19 +233,19 @@ def envoyer_notification_boutique_async(nom_boutique, email_gerant, telephone, a
         <body>
             <div class="container">
                 <div class="header">
-                    <h2>🏪 NOUVELLE DEMANDE D'INSCRIPTION</h2>
+                    <h2>NOUVELLE DEMANDE D'INSCRIPTION</h2>
                 </div>
                 <div class="content">
                     <div class="info">
-                        <p><strong>📅 Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
-                        <p><strong>🏪 Nom :</strong> {nom_boutique}</p>
-                        <p><strong>👤 Propriétaire :</strong> {proprietaire}</p>
-                        <p><strong>📧 Email :</strong> {email_gerant}</p>
-                        <p><strong>📞 Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
-                        <p><strong>📍 Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
+                        <p><strong>Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</p>
+                        <p><strong>Nom :</strong> {nom_boutique}</p>
+                        <p><strong>Propriétaire :</strong> {proprietaire}</p>
+                        <p><strong>Email :</strong> {email_gerant}</p>
+                        <p><strong>Téléphone :</strong> {telephone if telephone else 'Non renseigné'}</p>
+                        <p><strong>Adresse :</strong> {adresse if adresse else 'Non renseignée'}</p>
                     </div>
                     <p style="text-align: center;">
-                        <a href="https://gbutik-medilogic.onrender.com/admin_global" class="button">👑 Aller à l'Admin Global</a>
+                        <a href="https://gbutik-medilogic.onrender.com/admin_global" class="button">Aller à l'Admin Global</a>
                     </p>
                     <p>Connecte-toi à l'Admin Global pour <strong>activer</strong> ou <strong>refuser</strong> cette boutique.</p>
                 </div>
@@ -269,10 +269,10 @@ def envoyer_notification_boutique_async(nom_boutique, email_gerant, telephone, a
         server.send_message(msg)
         server.quit()
         
-        print(f"✅ Email de validation envoyé pour {nom_boutique}")
+        print(f"Email de validation envoyé pour {nom_boutique}")
         return True
     except Exception as e:
-        print(f"❌ Erreur envoi email: {e}")
+        print(f"Erreur envoi email: {e}")
         return False
 
 # Garde ta fonction originale comme wrapper synchrone (optionnel)
@@ -283,7 +283,7 @@ def envoyer_notification_boutique(nom_boutique, email_gerant, telephone, adresse
         args=(nom_boutique, email_gerant, telephone, adresse, proprietaire)
     )
     thread.start()
-    print(f"📧 Envoi email en arrière-plan pour {nom_boutique}")
+    print(f"Envoi email en arrière-plan pour {nom_boutique}")
     return True  # On retourne immédiatement
 
 
@@ -301,18 +301,18 @@ def creer_boutique(nom, email, password, telephone, adresse, proprietaire_nom, p
         ]
         sheet.append_row(row)
         
-        # 🔥 EMAIL ASYNC - ne bloque pas la réponse !
+        # EMAIL ASYNC - ne bloque pas la réponse !
         threading.Thread(
             target=envoyer_notification_boutique,
             args=(nom, email, telephone, adresse, proprietaire_complet)
         ).start()
         
-        print(f"✅ Boutique {nom} créée (ID: {new_id}) - Email en cours d'envoi...")
+        print(f"Boutique {nom} créée (ID: {new_id}) - Email en cours d'envoi...")
         
         return {'success': True, 'id': new_id, 'message': 'Demande envoyée. En attente de validation par l\'administrateur.'}
         
     except Exception as e:
-        print(f"❌ Erreur: {e}")
+        print(f"Erreur: {e}")
         traceback.print_exc()
         return {'success': False, 'error': str(e)}
 
@@ -444,7 +444,7 @@ def api_connexion():
     boutique = get_boutique_by_email(email)
     if boutique and boutique['password'] == hash_password(password):
         if boutique['actif'] != 'oui':
-            return jsonify({'success': False, 'error': '❌ Boutique en attente de validation. Contactez l\'administrateur.'})
+            return jsonify({'success': False, 'error': 'Boutique en attente de validation. Contactez l\'administrateur.'})
         session['boutique_id'] = boutique['id']
         session['boutique_nom'] = boutique['nom_boutique']
         session['email'] = boutique['email']
@@ -537,7 +537,7 @@ def api_ajouter_produit():
         ]
         stock_sheet.append_row(row_stock)
     
-    # 3. 🔔 ENREGISTRER DANS LE JOURNAL
+    # 3. ENREGISTRER DANS LE JOURNAL
     journal_sheet = get_sheet(boutique_id, 'journal')
     if journal_sheet:
         journal_row = [
@@ -552,7 +552,7 @@ def api_ajouter_produit():
             f"Ajout produit: {data.get('nom')} | Prix: {data.get('prixVente')} FCFA"
         ]
         journal_sheet.append_row(journal_row)
-        print(f"✅ Journal: Ajout produit {data.get('nom')}")
+        print(f"Journal: Ajout produit {data.get('nom')}")
     
     return jsonify({'success': True, 'message': 'Produit ajouté au catalogue et au stock'})
 
@@ -578,7 +578,7 @@ def api_valider_vente():
     if montant_du > 0.01 and not client_nom:
         return jsonify({'success': False, 'error': 'Nom du client requis pour enregistrer une créance'})
 
-    print(f"🔍 Vente unique de {produit_nom} x{quantite}")
+    print(f"Vente unique de {produit_nom} x{quantite}")
 
     try:
         stock_sheet = get_sheet(boutique_id, 'stock')
@@ -646,7 +646,7 @@ def api_valider_vente():
             for i in range(1, len(stock_data)):
                 if len(stock_data[i]) > 1 and stock_data[i][1] == produit_nom:
                     stock_sheet.update_cell(i+1, 3, nouveau_stock)
-                    print(f"📊 Stock {produit_nom}: {ancien_stock} → {nouveau_stock}")
+                    print(f"Stock {produit_nom}: {ancien_stock} → {nouveau_stock}")
                     break
         
         # Journal
@@ -669,7 +669,7 @@ def api_valider_vente():
         return jsonify({'success': True, 'message': message})
 
     except Exception as e:
-        print(f"❌ Erreur: {e}")
+        print(f"Erreur: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -693,7 +693,7 @@ def api_valider_panier():
     if montant_du_panier > 0.01 and not client_nom:
         return jsonify({'success': False, 'error': 'Nom du client requis pour enregistrer une créance'})
 
-    print(f"📦 Validation panier - {len(panier)} articles")
+    print(f"Validation panier - {len(panier)} articles")
 
     try:
         stock_sheet = get_sheet(boutique_id, 'stock')
@@ -744,7 +744,7 @@ def api_valider_panier():
             if total_article < 0:
                 total_article = 0
             
-            print(f"🔄 Article {idx+1}: {item['produit']} - ID: {vente_id}")
+            print(f"Article {idx+1}: {item['produit']} - ID: {vente_id}")
             
             # Récupérer le stock avant
             ancien_stock = 0
@@ -779,7 +779,7 @@ def api_valider_panier():
                 for i in range(1, len(stock_data)):
                     if len(stock_data[i]) > 1 and stock_data[i][1] == item['produit']:
                         stock_sheet.update_cell(i+1, 3, nouveau_stock)
-                        print(f"📊 Stock {item['produit']}: {ancien_stock} → {nouveau_stock}")
+                        print(f"Stock {item['produit']}: {ancien_stock} → {nouveau_stock}")
                         break
             
             # Journal
@@ -796,14 +796,14 @@ def api_valider_panier():
                     f"Prix: {item['prix']} FCFA | Total: {total_article} FCFA"
                 ])
         
-        print(f"✅ Panier validé - Total: {totalFinal} FCFA")
+        print(f"Panier validé - Total: {totalFinal} FCFA")
         message = f'Panier validé ! Total: {totalFinal} FCFA'
         if creance_id:
             message += f' | Créance de {montant_du_panier:,.0f} FCFA enregistrée pour {client_nom}'.replace(',', ' ')
         return jsonify({'success': True, 'message': message})
         
     except Exception as e:
-        print(f"❌ Erreur: {e}")
+        print(f"Erreur: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/get_journal')
@@ -922,7 +922,7 @@ def api_get_caisse_jour():
         row = data[i]
         if len(row) > 1 and row[1] == aujourd_hui:
 
-            # ✅ VÉRIFICATION : Ignorer les ventes annulées (colonne J = index 9)
+            # VÉRIFICATION : Ignorer les ventes annulées (colonne J = index 9)
             est_annulee = False
             try:
                 if len(row) > 9 and row[9] == '1':
@@ -1445,7 +1445,7 @@ def api_get_statistiques():
         row = data[i]
         if len(row) > 7 and row[0] and row[0].startswith('VENTE'):
             try:
-                # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                # VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
                 est_annulee = False
                 try:
                     if len(row) > 9 and row[9] == '1':
@@ -1567,7 +1567,7 @@ def api_get_dashboard_stats():
             row = data[i]
             if len(row) > 7:  # Au moins 8 colonnes
                 try:
-                    # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                    # VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
                     est_annulee = False
                     try:
                         if len(row) > 9 and row[9] == '1':
@@ -1817,7 +1817,7 @@ def api_connexion_vendeur():
     username = data.get('username')
     password = data.get('password')
     
-    print(f"🔐 Tentative connexion vendeur: {username}")
+    print(f"Tentative connexion vendeur: {username}")
     
     password_hash = hash_password(password)
     print(f"Hash du mot de passe: {password_hash}")
@@ -1836,14 +1836,14 @@ def api_connexion_vendeur():
             if len(row) > 1:
                 print(f"  Vérification: {row[1]} vs {username}")
                 if row[1] == username and row[2] == password_hash and row[4] == 'oui':
-                    print(f"✅ Vendeur trouvé dans boutique {boutique_id}")
+                    print(f"Vendeur trouvé dans boutique {boutique_id}")
                     session['boutique_id'] = boutique_id
                     session['user_role'] = 'vendeur'
                     session['user_nom'] = row[3] if len(row) > 3 else username
                     session['vendeur_id'] = row[0]
                     return jsonify({'success': True, 'role': 'vendeur'})
     
-    print("❌ Vendeur non trouvé")
+    print("Vendeur non trouvé")
     return jsonify({'success': False, 'error': 'Identifiants incorrects'})
 
 
@@ -2076,7 +2076,7 @@ def get_evolution_ventes():
         row = data[i]
         if len(row) > 7:  # Au moins 8 colonnes
             try:
-                # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+                # VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
                 est_annulee = False
                 try:
                     if len(row) > 9 and row[9] == '1':
@@ -2417,7 +2417,7 @@ def api_supprimer_produit():
         return jsonify({'success': True, 'message': f'Produit "{produit_nom}" supprimé avec succès'})
         
     except Exception as e:
-        print(f"❌ Erreur suppression: {e}")
+        print(f"Erreur suppression: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin_reset_password', methods=['POST'])
@@ -2524,7 +2524,7 @@ def api_modifier_produit():
         return jsonify({'success': True, 'message': f'Produit "{data.get("nom")}" modifié avec succès'})
         
     except Exception as e:
-        print(f"❌ Erreur modification: {e}")
+        print(f"Erreur modification: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/ventes_annulees')
@@ -2555,7 +2555,7 @@ def api_get_ventes_annulees():
         if not row[0] or not str(row[0]).startswith('VENTE_'):
             continue
         
-        # ✅ VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
+        # VÉRIFIER SI LA VENTE EST ANNULÉE (colonne J = index 9)
         est_annulee = False
         try:
             if len(row) > 9 and row[9] == '1':

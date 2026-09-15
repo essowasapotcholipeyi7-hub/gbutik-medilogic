@@ -131,14 +131,14 @@
 </head>
 <body>
     <div class="card">
-        <h1>🏪 GBoutik-MediLogic</h1>
+        <h1>GBoutik-MediLogic</h1>
         <h2>Créez votre espace boutique en quelques secondes</h2>
         
         <div id="errorMsg" class="alert alert-error"></div>
         <div id="successMsg" class="alert alert-success"></div>
         
         <!-- Section Boutique -->
-        <h3 style="margin-bottom: 15px; color: #1e3a8a;">🏢 Informations de la boutique</h3>
+        <h3 style="margin-bottom: 15px; color: #1e3a8a;">Informations de la boutique</h3>
         
         <div class="form-group">
             <label>Nom de la boutique <span class="required">*</span></label>
@@ -146,14 +146,14 @@
         </div>
         
         <div class="form-group">
-            <label>📍 Adresse complète</label>
+            <label>Adresse complète</label>
             <textarea id="adresse" rows="2" placeholder="Adresse physique de la boutique (optionnel)"></textarea>
         </div>
         
         <hr>
         
         <!-- Section Propriétaire -->
-        <h3 style="margin-bottom: 15px; color: #1e3a8a;">👤 Informations du propriétaire</h3>
+        <h3 style="margin-bottom: 15px; color: #1e3a8a;">Informations du propriétaire</h3>
         
         <div class="row">
             <div class="form-group">
@@ -167,43 +167,43 @@
         </div>
         
         <div class="form-group">
-            <label>📧 Email <span class="required">*</span></label>
+            <label>Email <span class="required">*</span></label>
             <input type="email" id="email" placeholder="gerant@boutique.com" autocomplete="off">
         </div>
         
         <div class="form-group">
-            <label>📞 Téléphone <span class="required">*</span></label>
+            <label>Téléphone <span class="required">*</span></label>
             <input type="tel" id="telephone" placeholder="Ex: 90XX XX XX ou +221 78 XXX XX XX">
         </div>
         
         <hr>
         
         <!-- Section Sécurité -->
-        <h3 style="margin-bottom: 15px; color: #1e3a8a;">🔒 Sécurité</h3>
+        <h3 style="margin-bottom: 15px; color: #1e3a8a;">Sécurité</h3>
         
         <div class="form-group">
-            <label>🔑 Mot de passe <span class="required">*</span></label>
+            <label>Mot de passe <span class="required">*</span></label>
             <input type="password" id="password" placeholder="Minimum 8 caractères" onkeyup="checkPasswordStrength()">
             <div id="passwordStrength" class="password-hint"></div>
         </div>
         
         <div class="form-group">
-            <label>🔑 Confirmer le mot de passe <span class="required">*</span></label>
+            <label>Confirmer le mot de passe <span class="required">*</span></label>
             <input type="password" id="confirm_password" placeholder="Retapez votre mot de passe" onkeyup="checkPasswordMatch()">
             <div id="passwordMatch" class="password-hint"></div>
         </div>
         
         <div class="alert-info">
-            💡 <strong>Information importante :</strong><br>
+            <strong>Information importante :</strong><br>
             • Une fois inscrit, votre boutique sera en attente d'activation par l'administrateur<br>
             • Vous recevrez une notification email après validation<br>
             • Tous les champs marqués d'un <span class="required">*</span> sont obligatoires
         </div>
         
-        <button id="submitBtn" onclick="inscrire()">📝 Créer ma boutique</button>
+        <button id="submitBtn" onclick="inscrire()">Créer ma boutique</button>
         
         <div class="login-link">
-            🔑 <a href="/login_page">Déjà inscrit ? Connectez-vous à votre espace</a>
+            <a href="/login_page">Déjà inscrit ? Connectez-vous à votre espace</a>
         </div>
     </div>
     
@@ -220,7 +220,7 @@
             }
             
             if (password.length < 8) {
-                strengthDiv.innerHTML = '<span class="strength-weak">❌ Minimum 8 caractères requis</span>';
+                strengthDiv.innerHTML = '<span class="strength-weak">Minimum 8 caractères requis</span>';
                 return;
             }
             
@@ -229,11 +229,11 @@
             var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
             
             if (hasNumber && hasLetter && hasSpecial && password.length >= 10) {
-                strengthDiv.innerHTML = '<span class="strength-strong">✅ Mot de passe fort (excellent)</span>';
+                strengthDiv.innerHTML = '<span class="strength-strong">Mot de passe fort (excellent)</span>';
             } else if ((hasNumber && hasLetter) || password.length >= 10) {
-                strengthDiv.innerHTML = '<span class="strength-medium">⚠️ Mot de passe moyen (ajoutez des caractères spéciaux)</span>';
+                strengthDiv.innerHTML = '<span class="strength-medium">Mot de passe moyen (ajoutez des caractères spéciaux)</span>';
             } else {
-                strengthDiv.innerHTML = '<span class="strength-weak">❌ Mot de passe faible (mélangez lettres, chiffres et symboles)</span>';
+                strengthDiv.innerHTML = '<span class="strength-weak">Mot de passe faible (mélangez lettres, chiffres et symboles)</span>';
             }
         }
         
@@ -248,9 +248,9 @@
             }
             
             if (password === confirm) {
-                matchDiv.innerHTML = '<span class="strength-strong">✅ Les mots de passe correspondent</span>';
+                matchDiv.innerHTML = '<span class="strength-strong">Les mots de passe correspondent</span>';
             } else {
-                matchDiv.innerHTML = '<span class="strength-weak">❌ Les mots de passe ne correspondent pas</span>';
+                matchDiv.innerHTML = '<span class="strength-weak">Les mots de passe ne correspondent pas</span>';
             }
         }
         
@@ -278,7 +278,7 @@
                 btn.innerHTML = '<span class="spinner"></span> Création en cours...';
                 btn.disabled = true;
             } else {
-                btn.innerHTML = '📝 Créer ma boutique';
+                btn.innerHTML = 'Créer ma boutique';
                 btn.disabled = false;
             }
         }
@@ -298,25 +298,25 @@
             
             // Validation des champs obligatoires
             if (!nom_boutique) {
-                showError('❌ Veuillez saisir le nom de votre boutique');
+                showError('Veuillez saisir le nom de votre boutique');
                 document.getElementById('nom_boutique').focus();
                 return;
             }
             
             if (!proprietaire_nom) {
-                showError('❌ Veuillez saisir votre nom');
+                showError('Veuillez saisir votre nom');
                 document.getElementById('proprietaire_nom').focus();
                 return;
             }
             
             if (!proprietaire_prenom) {
-                showError('❌ Veuillez saisir votre prénom');
+                showError('Veuillez saisir votre prénom');
                 document.getElementById('proprietaire_prenom').focus();
                 return;
             }
             
             if (!email) {
-                showError('❌ Veuillez saisir votre adresse email');
+                showError('Veuillez saisir votre adresse email');
                 document.getElementById('email').focus();
                 return;
             }
@@ -324,33 +324,33 @@
             // Validation email
             var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                showError('❌ Veuillez entrer une adresse email valide (ex: nom@domaine.com)');
+                showError('Veuillez entrer une adresse email valide (ex: nom@domaine.com)');
                 document.getElementById('email').focus();
                 return;
             }
             
             // Validation téléphone
             if (telephone && telephone.length < 8) {
-                showError('⚠️ Le numéro de téléphone doit contenir au moins 8 chiffres');
+                showError('Le numéro de téléphone doit contenir au moins 8 chiffres');
                 document.getElementById('telephone').focus();
                 return;
             }
             
             // Validation mot de passe
             if (!password) {
-                showError('❌ Veuillez choisir un mot de passe');
+                showError('Veuillez choisir un mot de passe');
                 document.getElementById('password').focus();
                 return;
             }
             
             if (password.length < 8) {
-                showError('❌ Le mot de passe doit contenir au moins 8 caractères');
+                showError('Le mot de passe doit contenir au moins 8 caractères');
                 document.getElementById('password').focus();
                 return;
             }
             
             if (password !== confirm) {
-                showError('❌ Les mots de passe ne correspondent pas');
+                showError('Les mots de passe ne correspondent pas');
                 document.getElementById('confirm_password').focus();
                 return;
             }
@@ -386,20 +386,20 @@
                 setLoading(false);
                 
                 if (data.success) {
-                    showSuccess('✅ ' + data.message);
+                    showSuccess('' + data.message);
                     // Redirection après 3 secondes
                     setTimeout(() => {
                         window.location.href = '/login_page';
                     }, 3000);
                 } else {
-                    showError('❌ ' + (data.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'));
+                    showError('' + (data.error || 'Erreur lors de l\'inscription. Veuillez réessayer.'));
                 }
             })
             .catch(error => {
                 isSubmitting = false;
                 setLoading(false);
                 console.error('Erreur:', error);
-                showError('❌ Erreur de connexion au serveur. Veuillez vérifier votre connexion et réessayer.');
+                showError('Erreur de connexion au serveur. Veuillez vérifier votre connexion et réessayer.');
             });
         }
         

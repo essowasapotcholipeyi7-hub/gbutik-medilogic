@@ -4,129 +4,387 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GBoutik-MediLogic - Connexion</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --navy: #0b1d35;
+            --navy-mid: #122340;
+            --navy-light: #1c3358;
+            --accent: #2dd4bf;
+            --accent-dim: rgba(45,212,191,0.15);
+            --accent-glow: rgba(45,212,191,0.35);
+            --gold: #f0c060;
+            --danger: #f87171;
+            --danger-dim: rgba(248,113,113,0.12);
+            --text: #e2eaf5;
+            --text-muted: #7a92b0;
+            --text-dim: #4a6280;
+            --border: rgba(255,255,255,0.08);
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            font-family: 'DM Sans', sans-serif;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            background: #f4f6fa;
+        }
+
+        /* ===== Panneau gauche : identité de marque ===== */
+        .brand-panel {
+            position: relative;
+            flex: 1 1 46%;
+            min-width: 0;
+            background: var(--navy);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 56px 64px;
+            overflow: hidden;
+        }
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(45,212,191,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(45,212,191,0.05) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+        }
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            top: -220px; right: -220px;
+            width: 620px; height: 620px;
+            background: radial-gradient(circle, rgba(45,212,191,0.16) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .brand-top, .brand-bottom { position: relative; z-index: 1; }
+
+        .brand-mark {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, var(--accent), #0ea5e9);
+            border-radius: 12px;
+            box-shadow: 0 0 22px var(--accent-glow);
+            margin-bottom: 28px;
+        }
+        .brand-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.1rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+        .brand-title span { color: var(--accent); }
+        .brand-lede {
+            font-size: 0.98rem;
+            color: var(--text-muted);
+            max-width: 380px;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .feature-icon {
+            flex: none;
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(45,212,191,0.25);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent);
+        }
+        .feature-list strong { color: var(--text); display: block; font-size: 0.92rem; margin-bottom: 2px; }
+
+        .brand-footer {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            letter-spacing: 0.05em;
+            font-family: 'DM Sans', monospace;
+        }
+
+        /* ===== Panneau droit : formulaire ===== */
+        .form-panel {
+            flex: 1 1 54%;
+            display: flex;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            padding: 40px 24px;
         }
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
+        .form-wrap {
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
         }
-        h1 { text-align: center; color: #1e3a8a; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; }
+        .form-heading {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+        .form-subtitle {
+            color: #6b7688;
+            font-size: 0.88rem;
+            margin-bottom: 32px;
+        }
+
+        .error {
+            background: #fdecec;
+            color: #b42318;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: none;
+            border: 1px solid #f6c6c2;
+        }
+
         .role-buttons {
             display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
+            background: #eef1f6;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+            gap: 4px;
         }
         .role-btn {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            background: #f5f5f5;
-            border-radius: 10px;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 9px;
             cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.88rem;
+            font-family: inherit;
+            color: #6b7688;
+            transition: all 0.2s;
         }
         .role-btn.active {
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-            color: white;
-            border-color: transparent;
+            background: var(--navy);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(11,29,53,0.25);
         }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            color: var(--navy);
+            font-size: 0.82rem;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap svg {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: #9aa5b8;
+            pointer-events: none;
+        }
         input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 12px 14px 12px 42px;
+            border: 1.5px solid #e3e7ee;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            background: #fbfcfe;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        button {
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+            background: #fff;
+        }
+
+        .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            padding: 13px;
+            background: linear-gradient(135deg, var(--navy) 0%, #1c3358 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 6px;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
-        .register-link { text-align: center; margin-top: 20px; }
-        .register-link a { color: #1e3a8a; text-decoration: none; }
-        .webauthn-link { text-align: center; margin-top: 15px; }
-        .webauthn-link a { color: #2563eb; text-decoration: none; font-size: 14px; }
-        .webauthn-link a:hover { text-decoration: underline; }
+        .btn-submit:hover { box-shadow: 0 8px 20px rgba(11,29,53,0.28); transform: translateY(-1px); }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0;
+            color: #b3bccb;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e3e7ee;
+        }
+
+        .btn-webauthn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: #fff;
+            border: 1.5px solid #e3e7ee;
+            border-radius: 10px;
+            color: var(--navy);
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .btn-webauthn:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+        .register-link {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 0.85rem;
+            color: #6b7688;
+        }
+        .register-link a { color: var(--navy); font-weight: 600; text-decoration: none; }
+        .register-link a:hover { color: var(--accent); }
+
+        @media (max-width: 900px) {
+            .brand-panel { display: none; }
+            .form-panel { flex: 1 1 100%; }
+        }
+        @media (max-width: 460px) {
+            .form-panel { padding: 24px 16px; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>🏪 GBoutik-MediLogic</h1>
-        <div class="subtitle">Gestion multi-boutiques</div>
-        
-        <div id="errorMsg" class="error"></div>
-        
-        <!-- Choix du rôle -->
-        <div class="role-buttons">
-            <button id="btnGerant" class="role-btn active" onclick="selectRole('gerant')">👑 Gérant</button>
-            <button id="btnVendeur" class="role-btn" onclick="selectRole('vendeur')">👤 Vendeur</button>
-        </div>
-        
-        <!-- Formulaire Gérant -->
-        <div id="gerantForm">
-            <div class="form-group">
-                <label>📧 Email du gérant</label>
-                <input type="email" id="email" placeholder="gerant@boutique.com">
-            </div>
-            <div class="form-group">
-                <label>🔑 Mot de passe</label>
-                <input type="password" id="password" placeholder="Mot de passe">
-            </div>
-        </div>
-        
-        <!-- Formulaire Vendeur -->
-        <div id="vendeurForm" style="display:none;">
-            <div class="form-group">
-                <label>👤 Nom d'utilisateur</label>
-                <input type="text" id="vendeurUsername" placeholder="vendeur1">
-            </div>
-            <div class="form-group">
-                <label>🔑 Mot de passe</label>
-                <input type="password" id="vendeurPassword" placeholder="Mot de passe">
-            </div>
-        </div>
-        
-        <button onclick="seConnecter()">Se connecter</button>
 
-        <div class="webauthn-link" id="zoneLienWebauthn" style="display:none;">
-            <a href="#" onclick="seConnecterWebauthn(); return false;">🔐 Se connecter avec Face ID / Windows Hello</a>
-        </div>
+    <aside class="brand-panel">
+        <div class="brand-top">
+            <div class="brand-mark"></div>
+            <h1 class="brand-title">GBoutik<span>·</span>MediLogic</h1>
+            <p class="brand-lede">La plateforme de gestion multi-boutiques : ventes, stock, caisse, charges et créances, réunis dans un seul espace.</p>
 
-        <div class="register-link">
-            <a href="/inscription">Créer une boutique</a>
+            <ul class="feature-list">
+                <li>
+                    <span class="feature-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+                    </span>
+                    <span><strong>Multi-boutiques</strong>Un espace dédié pour chaque point de vente, avec ses vendeurs et son suivi propre.</span>
+                </li>
+                <li>
+                    <span class="feature-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </span>
+                    <span><strong>Caisse, charges et créances</strong>Validation des dépenses et des paiements clients, avec traçabilité complète.</span>
+                </li>
+                <li>
+                    <span class="feature-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    </span>
+                    <span><strong>Connexion sécurisée</strong>Accès par mot de passe ou par biométrie (Face ID, Windows Hello).</span>
+                </li>
+            </ul>
         </div>
-    </div>
+        <div class="brand-bottom">
+            <span class="brand-footer">GBoutik-MediLogic · Espace de gestion</span>
+        </div>
+    </aside>
+
+    <main class="form-panel">
+        <div class="form-wrap">
+            <h2 class="form-heading">Bienvenue</h2>
+            <p class="form-subtitle">Connectez-vous pour accéder à votre espace de gestion.</p>
+
+            <div id="errorMsg" class="error"></div>
+
+            <div class="role-buttons">
+                <button id="btnGerant" class="role-btn active" onclick="selectRole('gerant')">Gérant</button>
+                <button id="btnVendeur" class="role-btn" onclick="selectRole('vendeur')">Vendeur</button>
+            </div>
+
+            <!-- Formulaire Gérant -->
+            <div id="gerantForm">
+                <div class="form-group">
+                    <label>Email du gérant</label>
+                    <div class="input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                        <input type="email" id="email" placeholder="gerant@boutique.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <div class="input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        <input type="password" id="password" placeholder="Mot de passe">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire Vendeur -->
+            <div id="vendeurForm" style="display:none;">
+                <div class="form-group">
+                    <label>Nom d'utilisateur</label>
+                    <div class="input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                        <input type="text" id="vendeurUsername" placeholder="vendeur1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <div class="input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        <input type="password" id="vendeurPassword" placeholder="Mot de passe">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-submit" onclick="seConnecter()">Se connecter</button>
+
+            <div class="divider" id="zoneLienWebauthn" style="display:none;">ou</div>
+            <button type="button" class="btn-webauthn" id="btnWebauthn" style="display:none;" onclick="seConnecterWebauthn()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11c0 3-1 5-1 5"/><path d="M8.5 8.5C9 8 10.3 7.5 12 7.5s3 .5 3.5 1"/><path d="M6 10c0-3.3 2.7-6 6-6s6 2.7 6 6c0 1 0 2-.3 3"/><path d="M4 12a8 8 0 0116 0c0 2-.3 4-1 5.5"/><path d="M9 17c-.6-1-1-2.3-1-4a4 4 0 118 0"/></svg>
+                Face ID / Windows Hello
+            </button>
+
+            <div class="register-link">
+                Nouvelle boutique ? <a href="/inscription">Créez votre espace</a>
+            </div>
+        </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (window.SimpleWebAuthnBrowser && SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
-                document.getElementById('zoneLienWebauthn').style.display = 'block';
+                document.getElementById('zoneLienWebauthn').style.display = 'flex';
+                document.getElementById('btnWebauthn').style.display = 'flex';
             }
         });
 
@@ -136,7 +394,7 @@
             try {
                 const rOpt = await fetch('/login/webauthn/options', { method: 'POST' });
                 const dOpt = await rOpt.json();
-                if (!dOpt.success) { errorDiv.innerHTML = '❌ ' + (dOpt.error || 'Erreur'); errorDiv.style.display = 'block'; return; }
+                if (!dOpt.success) { errorDiv.textContent = dOpt.error || 'Erreur'; errorDiv.style.display = 'block'; return; }
 
                 const assertion = await SimpleWebAuthnBrowser.startAuthentication(dOpt.options);
 
@@ -148,26 +406,26 @@
                 if (dVer.success) {
                     window.location.href = dVer.redirect || '/dashboard_boutique';
                 } else {
-                    errorDiv.innerHTML = '❌ ' + (dVer.error || 'Connexion refusée');
+                    errorDiv.textContent = dVer.error || 'Connexion refusée';
                     errorDiv.style.display = 'block';
                 }
             } catch (err) {
                 if (err.name === 'NotAllowedError') return; // annulé par l'utilisateur
-                errorDiv.innerHTML = '❌ Échec : ' + (err.message || err);
+                errorDiv.textContent = 'Échec : ' + (err.message || err);
                 errorDiv.style.display = 'block';
             }
         }
     </script>
     <script>
         let roleActuel = 'gerant';
-        
+
         function selectRole(role) {
             roleActuel = role;
             const btnGerant = document.getElementById('btnGerant');
             const btnVendeur = document.getElementById('btnVendeur');
             const gerantForm = document.getElementById('gerantForm');
             const vendeurForm = document.getElementById('vendeurForm');
-            
+
             if (role === 'gerant') {
                 btnGerant.classList.add('active');
                 btnVendeur.classList.remove('active');
@@ -180,20 +438,21 @@
                 vendeurForm.style.display = 'block';
             }
         }
-        
+
         function seConnecter() {
             const errorDiv = document.getElementById('errorMsg');
-            
+            errorDiv.style.display = 'none';
+
             if (roleActuel === 'gerant') {
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-                
+
                 if (!email || !password) {
-                    errorDiv.innerHTML = '❌ Veuillez saisir email et mot de passe';
+                    errorDiv.textContent = 'Veuillez saisir email et mot de passe';
                     errorDiv.style.display = 'block';
                     return;
                 }
-                
+
                 fetch('/api/connexion_boutique', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -204,27 +463,27 @@
                     if (data.success) {
                         window.location.href = '/dashboard_boutique';
                     } else {
-                        errorDiv.innerHTML = '❌ ' + data.error;
+                        errorDiv.textContent = data.error;
                         errorDiv.style.display = 'block';
                     }
                 });
-            } 
+            }
             else {
                 const username = document.getElementById('vendeurUsername').value;
                 const password = document.getElementById('vendeurPassword').value;
-                
+
                 if (!username || !password) {
-                    errorDiv.innerHTML = '❌ Veuillez saisir nom d\'utilisateur et mot de passe';
+                    errorDiv.textContent = "Veuillez saisir nom d'utilisateur et mot de passe";
                     errorDiv.style.display = 'block';
                     return;
                 }
-                
+
                 fetch('/api/connexion_vendeur', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        username: username, 
-                        password: password 
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
                     })
                 })
                 .then(response => response.json())
@@ -232,13 +491,13 @@
                     if (data.success) {
                         window.location.href = '/dashboard_vendeur';
                     } else {
-                        errorDiv.innerHTML = '❌ ' + data.error;
+                        errorDiv.textContent = data.error;
                         errorDiv.style.display = 'block';
                     }
                 });
             }
         }
-        
+
         // Appuyer sur Entrée pour valider
         document.getElementById('password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') seConnecter();

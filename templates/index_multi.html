@@ -79,11 +79,11 @@
 </head>
 <body>
     <div class="card">
-        <h1>🏪 GBoutik-MediLogic</h1>
+        <h1>GBoutik-MediLogic</h1>
         <div id="errorMsg" class="error"></div>
         
         <div class="form-group">
-            <label>🏢 Choisir la boutique</label>
+            <label>Choisir la boutique</label>
             <select id="boutique_id">
                 <option value="1">Boutique 1</option>
                 <option value="2">Boutique 2</option>
@@ -99,14 +99,14 @@
         </div>
         
         <div class="form-group">
-            <label>🔑 Mot de passe gérant</label>
+            <label>Mot de passe gérant</label>
             <input type="password" id="password" placeholder="admin123">
         </div>
         
         <button onclick="seConnecter()">Se connecter</button>
         
         <div class="info">
-            💡 Mot de passe par défaut : <strong>admin123</strong>
+            Mot de passe par défaut : <strong>admin123</strong>
         </div>
     </div>
     
@@ -130,12 +130,12 @@
                 if (data.success) {
                     window.location.href = '/dashboard';
                 } else {
-                    errorDiv.innerHTML = '❌ Mot de passe incorrect pour la boutique ' + boutique_id;
+                    errorDiv.innerHTML = 'Mot de passe incorrect pour la boutique ' + boutique_id;
                     errorDiv.style.display = 'block';
                 }
             })
             .catch(error => {
-                errorDiv.innerHTML = '❌ Erreur de connexion au serveur';
+                errorDiv.innerHTML = 'Erreur de connexion au serveur';
                 errorDiv.style.display = 'block';
             });
         }

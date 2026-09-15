@@ -126,7 +126,7 @@
     <div class="card">
         <div class="header">
             <h2>
-                🗑️ Ventes annulées
+                Ventes annulées
                 <span id="compteur">0</span>
             </h2>
             <a href="/dashboard_boutique" class="back-btn">← Retour</a>
@@ -175,7 +175,7 @@
         </div>
         
         <div style="margin-top: 20px; text-align: center; color: #888; font-size: 13px;">
-            🔒 Les ventes annulées ne sont pas prises en compte dans les statistiques
+            Les ventes annulées ne sont pas prises en compte dans les statistiques
         </div>
     </div>
     
@@ -196,7 +196,7 @@
                             <tr>
                                 <td colspan="10">
                                     <div class="empty-state">
-                                        <div class="icon">✅</div>
+                                        <div class="icon"></div>
                                         <p>Aucune vente annulée</p>
                                         <p style="font-size: 13px; color: #aaa;">Les ventes annulées apparaîtront ici</p>
                                     </div>
@@ -245,7 +245,7 @@
                     });
                 })
                 .catch(function(error) {
-                    document.getElementById('ventesBody').innerHTML = '<tr><td colspan="10">❌ Erreur: ' + error + '</td></tr>';
+                    document.getElementById('ventesBody').innerHTML = '<tr><td colspan="10">Erreur: ' + error + '</td></tr>';
                 });
         }
         

@@ -48,16 +48,16 @@
 </head>
 <body>
   <header class="header">
-    <div class="header-brand"><h1>🔔 Demandes <span style="color:var(--accent)">en attente</span></h1></div>
+    <div class="header-brand"><h1>Demandes <span style="color:var(--accent)">en attente</span></h1></div>
     <a href="/dashboard_boutique" class="btn-deco">← Tableau de bord</a>
   </header>
 
   <div class="container">
     <div class="tabs">
       <button class="tab-btn active" id="tabAttente" onclick="changerFiltre('EN_ATTENTE')">⏳ En attente</button>
-      <button class="tab-btn" id="tabValidees" onclick="changerFiltre('VALIDEE')">✅ Validées</button>
-      <button class="tab-btn" id="tabRefusees" onclick="changerFiltre('REFUSEE')">❌ Refusées</button>
-      <button class="tab-btn" id="tabToutes" onclick="changerFiltre('TOUTES')">📋 Toutes</button>
+      <button class="tab-btn" id="tabValidees" onclick="changerFiltre('VALIDEE')">Validées</button>
+      <button class="tab-btn" id="tabRefusees" onclick="changerFiltre('REFUSEE')">Refusées</button>
+      <button class="tab-btn" id="tabToutes" onclick="changerFiltre('TOUTES')">Toutes</button>
     </div>
     <div id="demandesList">
       <div class="empty-state">Chargement…</div>
@@ -83,8 +83,8 @@
     }
 
     function badgeStatut(statut) {
-      if (statut === 'VALIDEE') return '<span class="badge badge-validee">✅ Validée</span>';
-      if (statut === 'REFUSEE') return '<span class="badge badge-refusee">❌ Refusée</span>';
+      if (statut === 'VALIDEE') return '<span class="badge badge-validee">Validée</span>';
+      if (statut === 'REFUSEE') return '<span class="badge badge-refusee">Refusée</span>';
       return '<span class="badge badge-attente">⏳ En attente</span>';
     }
 
@@ -125,8 +125,8 @@
             if (d.statut === 'EN_ATTENTE') {
               actions = `
                 <div class="demande-actions">
-                  <button class="btn-action btn-valider" onclick="traiterDemande('${d.id}', 'valider')">✅ Valider</button>
-                  <button class="btn-action btn-refuser" onclick="traiterDemande('${d.id}', 'refuser')">❌ Refuser</button>
+                  <button class="btn-action btn-valider" onclick="traiterDemande('${d.id}', 'valider')">Valider</button>
+                  <button class="btn-action btn-refuser" onclick="traiterDemande('${d.id}', 'refuser')">Refuser</button>
                 </div>`;
             } else {
               actions = `<span class="demande-meta">${d.traitePar ? 'Par ' + escapeHtml(d.traitePar) + ' — ' + d.dateTraitement : ''}</span>`;

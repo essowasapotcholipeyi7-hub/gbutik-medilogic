@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour en haut à droite -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📦 État du stock - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>État du stock - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -10,9 +10,9 @@
     <div id="stockMessage"></div>
     
     <div style="margin: 20px 0; display: flex; gap: 10px;">
-        <input type="text" id="searchInput" placeholder="🔍 Rechercher un produit..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-        <button onclick="rechercher()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍</button>
-        <button onclick="reinitialiser()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">❌</button>
+        <input type="text" id="searchInput" placeholder="Rechercher un produit..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+        <button onclick="rechercher()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;"></button>
+        <button onclick="reinitialiser()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;"></button>
     </div>
     
     <div class="stats">
@@ -35,7 +35,7 @@
     </div>
     
     <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-        <button onclick="chargerStock()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="chargerStock()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
     </div>
 </div>
 
@@ -146,7 +146,7 @@
             var row = tbody.insertRow();
             var stock = p.stock || 0;
             var seuil = p.seuil || 0;
-            var statut = stock <= 0 ? '🔴 RUPTURE' : (stock <= seuil ? '⚠️ ALERTE' : '✅ OK');
+            var statut = stock <= 0 ? 'RUPTURE' : (stock <= seuil ? 'ALERTE' : 'OK');
             var classe = stock <= 0 ? 'alert-out' : (stock <= seuil ? 'alert-low' : '');
             
             row.insertCell(0).innerHTML = '<strong>' + (p.nom || '-') + '</strong>';

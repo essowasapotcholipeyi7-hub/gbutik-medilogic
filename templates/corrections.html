@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>🔄 Corrections des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Corrections des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -10,7 +10,7 @@
     <div id="correctionMessage"></div>
     
     <div style="margin-bottom: 20px;">
-        <input type="text" id="searchCorrection" placeholder="🔍 Rechercher un produit ou vendeur..." style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onkeyup="filtrerVentes()">
+        <input type="text" id="searchCorrection" placeholder="Rechercher un produit ou vendeur..." style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onkeyup="filtrerVentes()">
     </div>
     
     <div class="table-container">
@@ -30,27 +30,27 @@
 <!-- MODAL CORRECTION -->
 <div id="modalCorrection" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:550px; max-height:90%; overflow-y:auto;">
-        <h2 style="margin-bottom:20px; color:#1e3a8a;">🔄 Correction de la vente</h2>
+        <h2 style="margin-bottom:20px; color:#1e3a8a;">Correction de la vente</h2>
         <div id="correctionInfo" style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:20px;"></div>
         
         <div class="options-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
             <div class="option-card" onclick="selectionnerAction('annulation')" id="optAnnulation" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
-                <div style="font-size:24px;">🗑️</div>
+                <div style="font-size:24px;"></div>
                 <div><strong>Annuler</strong></div>
                 <div style="font-size:11px; color:#666;">Annuler toute la vente</div>
             </div>
             <div class="option-card" onclick="selectionnerAction('correctionPrix')" id="optCorrectionPrix" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
-                <div style="font-size:24px;">✏️</div>
+                <div style="font-size:24px;"></div>
                 <div><strong>Corriger prix</strong></div>
                 <div style="font-size:11px; color:#666;">Modifier le prix de vente</div>
             </div>
             <div class="option-card" onclick="selectionnerAction('correctionQuantite')" id="optCorrectionQuantite" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
-                <div style="font-size:24px;">🔢</div>
+                <div style="font-size:24px;"></div>
                 <div><strong>Corriger quantité</strong></div>
                 <div style="font-size:11px; color:#666;">Modifier la quantité vendue</div>
             </div>
             <div class="option-card" onclick="selectionnerAction('remboursement')" id="optRemboursement" style="padding:15px; border:2px solid #e0e0e0; border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;">
-                <div style="font-size:24px;">💰</div>
+                <div style="font-size:24px;"></div>
                 <div><strong>Remboursement</strong></div>
                 <div style="font-size:11px; color:#666;">Rembourser partiellement</div>
             </div>
@@ -63,8 +63,8 @@
                 <input type="text" id="motifAnnulation" placeholder="Ex: Client annulé" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
             <div class="info-box" style="background:#fefce8; padding:15px; border-radius:12px; margin-top:10px;">
-                <p><strong>💰 Montant à annuler :</strong> <span id="montantAnnulation">0</span> FCFA</p>
-                <p><strong>📦 Stock restauré :</strong> +<span id="stockRestaure">0</span> unités</p>
+                <p><strong>Montant à annuler :</strong> <span id="montantAnnulation">0</span> FCFA</p>
+                <p><strong>Stock restauré :</strong> +<span id="stockRestaure">0</span> unités</p>
             </div>
         </div>
         
@@ -83,7 +83,7 @@
                 <input type="text" id="motifPrix" placeholder="Ex: Erreur de saisie" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
             <div class="info-box" style="background:#e0e7ff; padding:15px; border-radius:12px; margin-top:10px;">
-                <p><strong>📊 Différence :</strong> <span id="diffPrix">0</span> FCFA</p>
+                <p><strong>Différence :</strong> <span id="diffPrix">0</span> FCFA</p>
             </div>
         </div>
         
@@ -102,7 +102,7 @@
                 <input type="text" id="motifQuantite" placeholder="Ex: Erreur de comptage" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
             <div class="info-box" style="background:#e0e7ff; padding:15px; border-radius:12px; margin-top:10px;">
-                <p><strong>📊 Nouveau total :</strong> <span id="nouveauTotal">0</span> FCFA</p>
+                <p><strong>Nouveau total :</strong> <span id="nouveauTotal">0</span> FCFA</p>
             </div>
         </div>
         
@@ -117,14 +117,14 @@
                 <input type="text" id="motifRemboursement" placeholder="Ex: Produit défectueux" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
             <div class="info-box" style="background:#fefce8; padding:15px; border-radius:12px; margin-top:10px;">
-                <p><strong>💰 Montant original :</strong> <span id="montantOriginal">0</span> FCFA</p>
-                <p><strong>💵 Reste à payer :</strong> <span id="resteAPayer">0</span> FCFA</p>
+                <p><strong>Montant original :</strong> <span id="montantOriginal">0</span> FCFA</p>
+                <p><strong>Reste à payer :</strong> <span id="resteAPayer">0</span> FCFA</p>
             </div>
         </div>
         
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button onclick="validerCorrection()" style="flex:1; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">✅ Valider</button>
-            <button onclick="fermerModalCorrection()" style="flex:1; background:#6c757d; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">❌ Annuler</button>
+            <button onclick="validerCorrection()" style="flex:1; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">Valider</button>
+            <button onclick="fermerModalCorrection()" style="flex:1; background:#6c757d; color:white; border:none; border-radius:8px; padding:12px; cursor:pointer;">Annuler</button>
         </div>
         <div id="correctionError" class="error-msg" style="margin-top:15px; display:none; background:#f8d7da; color:#721c24; padding:10px; border-radius:8px;"></div>
     </div>
@@ -188,17 +188,17 @@
             
             // Statut
             var estAnnulee = v.statut === 'ANNULÉE';
-            var statutHtml = estAnnulee ? '<span class="statut-annule">❌ ANNULÉE</span>' : '<span class="statut-actif">✅ ACTIVE</span>';
+            var statutHtml = estAnnulee ? '<span class="statut-annule">ANNULÉE</span>' : '<span class="statut-actif">ACTIVE</span>';
             row.insertCell(7).innerHTML = statutHtml;
             
             // Bouton Action
             var btn = document.createElement('button');
             if (estAnnulee) {
-                btn.textContent = '🔒 Déjà annulée';
+                btn.textContent = 'Déjà annulée';
                 btn.style = 'background:#6c757d; color:white; border:none; border-radius:5px; padding:5px 12px; cursor:not-allowed;';
                 btn.disabled = true;
             } else {
-                btn.textContent = '🔄 Corriger';
+                btn.textContent = 'Corriger';
                 btn.style = 'background:#ff9800; color:white; border:none; border-radius:5px; padding:5px 12px; cursor:pointer;';
                 btn.onclick = (function(vente) { return function() { ouvrirCorrection(vente); }; })(v);
             }
@@ -225,12 +225,12 @@
         venteSelectionnee = vente;
         
         document.getElementById('correctionInfo').innerHTML = `
-            <p><strong>📦 Produit:</strong> ${escapeHtml(vente.produit)}</p>
-            <p><strong>🔢 Quantité:</strong> ${vente.quantite || 0}</p>
-            <p><strong>💰 Prix vendu:</strong> ${(vente.prix_vendu || 0).toLocaleString('fr-FR')} FCFA</p>
-            <p><strong>💵 Total:</strong> ${(vente.total || 0).toLocaleString('fr-FR')} FCFA</p>
-            <p><strong>👤 Vendeur:</strong> ${escapeHtml(vente.vendeur || '')}</p>
-            <p><strong>📅 Date:</strong> ${vente.date || ''} ${vente.heure || ''}</p>
+            <p><strong>Produit:</strong> ${escapeHtml(vente.produit)}</p>
+            <p><strong>Quantité:</strong> ${vente.quantite || 0}</p>
+            <p><strong>Prix vendu:</strong> ${(vente.prix_vendu || 0).toLocaleString('fr-FR')} FCFA</p>
+            <p><strong>Total:</strong> ${(vente.total || 0).toLocaleString('fr-FR')} FCFA</p>
+            <p><strong>Vendeur:</strong> ${escapeHtml(vente.vendeur || '')}</p>
+            <p><strong>Date:</strong> ${vente.date || ''} ${vente.heure || ''}</p>
         `;
         
         document.getElementById('montantAnnulation').innerHTML = (vente.total || 0).toLocaleString('fr-FR');
@@ -360,12 +360,12 @@
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                document.getElementById('correctionMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">✅ ' + result.message + '</div>';
+                document.getElementById('correctionMessage').innerHTML = '<div style="background:#d4edda; padding:15px; border-radius:8px; margin-bottom:15px;">' + result.message + '</div>';
                 fermerModalCorrection();
                 chargerVentes(); // Recharge la liste
                 setTimeout(() => { document.getElementById('correctionMessage').innerHTML = ''; }, 3000);
             } else {
-                afficherErreurCorrection('❌ ' + result.error);
+                afficherErreurCorrection('' + result.error);
             }
         });
     }

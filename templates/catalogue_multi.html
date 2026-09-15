@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📋 Catalogue - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Catalogue - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -10,9 +10,9 @@
     <div id="catalogueMessage"></div>
     
     <div style="margin: 20px 0; display: flex; gap: 10px;">
-        <input type="text" id="searchInput" placeholder="🔍 Rechercher..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-        <button onclick="rechercher()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍</button>
-        <button onclick="reinitialiser()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">❌</button>
+        <input type="text" id="searchInput" placeholder="Rechercher..." style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+        <button onclick="rechercher()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;"></button>
+        <button onclick="reinitialiser()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;"></button>
     </div>
     
     <div class="table-container">
@@ -29,17 +29,17 @@
     </div>
     
     <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: space-between;">
-        <button onclick="ouvrirModalAjout()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">➕ Ajouter un produit</button>
-        <button onclick="imprimerCatalogue()" style="background:#6f42c1; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🖨️ Imprimer le catalogue</button>
+        <button onclick="ouvrirModalAjout()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Ajouter un produit</button>
+        <button onclick="imprimerCatalogue()" style="background:#6f42c1; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Imprimer le catalogue</button>
     </div>
-        <button onclick="chargerCatalogue()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
+        <button onclick="chargerCatalogue()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
     </div>
 </div>
 
 <!-- ========== MODAL AJOUT ========== -->
 <div id="modalAjout" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:500px;">
-        <h3>➕ Ajouter un produit</h3>
+        <h3>Ajouter un produit</h3>
         <input type="text" id="modalNom" placeholder="Nom *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <input type="text" id="modalCategorie" placeholder="Catégorie" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <input type="number" id="modalPrixAchat" placeholder="Prix achat (optionnel)" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
@@ -47,8 +47,8 @@
         <input type="number" id="modalStock" placeholder="Stock initial" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <input type="number" id="modalSeuil" placeholder="Seuil alerte" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button id="btnAjouterSave" onclick="ajouterProduit()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">✅ Ajouter</button>
-            <button onclick="fermerModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">❌ Annuler</button>
+            <button id="btnAjouterSave" onclick="ajouterProduit()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Ajouter</button>
+            <button onclick="fermerModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Annuler</button>
         </div>
     </div>
 </div>
@@ -56,7 +56,7 @@
 <!-- ========== MODAL MODIFIER ========== -->
 <div id="modalEdit" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:25px; width:90%; max-width:500px;">
-        <h3>✏️ Modifier le produit</h3>
+        <h3>Modifier le produit</h3>
         <input type="hidden" id="editId">
         <input type="text" id="editNom" placeholder="Nom *" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <input type="text" id="editCategorie" placeholder="Catégorie" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
@@ -66,8 +66,8 @@
         <input type="number" id="editSeuil" placeholder="Seuil alerte" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <div id="editMessage" style="display:none; padding:10px; border-radius:8px; margin:10px 0;"></div>
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button id="btnEditSave" onclick="enregistrerModification()" style="flex:1; background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">💾 Enregistrer</button>
-            <button onclick="fermerEditModal()" style="flex:1; background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">❌ Annuler</button>
+            <button id="btnEditSave" onclick="enregistrerModification()" style="flex:1; background:#28a745; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Enregistrer</button>
+            <button onclick="fermerEditModal()" style="flex:1; background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Annuler</button>
         </div>
     </div>
 </div>
@@ -175,11 +175,11 @@
             row.insertCell(5).textContent = (p.stock || 0).toLocaleString();
             row.insertCell(6).textContent = p.seuil || 0;
             
-            // ✅ Colonne Action avec Modifier + Supprimer
+            // Colonne Action avec Modifier + Supprimer
             var actionsCell = row.insertCell(7);
             actionsCell.innerHTML = `
-                <button class="btn-modifier" onclick="openEditModal('${p.id}')">✏️ Modifier</button>
-                <button class="btn-supprimer" onclick="supprimerProduit('${p.nom}')">🗑️</button>
+                <button class="btn-modifier" onclick="openEditModal('${p.id}')">Modifier</button>
+                <button class="btn-supprimer" onclick="supprimerProduit('${p.nom}')"></button>
             `;
         });
     }
@@ -212,11 +212,11 @@
     }
     
 function fermerModal() {
-    // ✅ RÉACTIVER LE BOUTON
+    // RÉACTIVER LE BOUTON
     var btn = document.getElementById('btnAjouterSave');
     if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '✅ Ajouter';
+        btn.innerHTML = 'Ajouter';
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
     }
@@ -247,7 +247,7 @@ function ajouterProduit() {
         return;
     }
     
-    // ✅ DÉSACTIVER LE BOUTON
+    // DÉSACTIVER LE BOUTON
     var btn = document.getElementById('btnAjouterSave');
     if (btn) {
         btn.disabled = true;
@@ -292,7 +292,7 @@ function ajouterProduit() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            msgDiv.innerHTML = '✅ ' + data.message;
+            msgDiv.innerHTML = '' + data.message;
             msgDiv.style.background = '#d4edda';
             msgDiv.style.color = '#155724';
             
@@ -310,34 +310,34 @@ function ajouterProduit() {
                 chargerCatalogue();
                 var msg = document.getElementById('catalogueMessage');
                 if (msg) {
-                    msg.innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ ' + data.message + '</div>';
+                    msg.innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">' + data.message + '</div>';
                     setTimeout(function() { msg.innerHTML = ''; }, 3000);
                 }
             }, 1500);
             
         } else {
-            msgDiv.innerHTML = '❌ ' + data.error;
+            msgDiv.innerHTML = '' + data.error;
             msgDiv.style.background = '#f8d7da';
             msgDiv.style.color = '#721c24';
             
-            // ✅ RÉACTIVER LE BOUTON EN CAS D'ERREUR
+            // RÉACTIVER LE BOUTON EN CAS D'ERREUR
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '✅ Ajouter';
+                btn.innerHTML = 'Ajouter';
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
             }
         }
     })
     .catch(function(error) {
-        msgDiv.innerHTML = '❌ Erreur réseau: ' + error;
+        msgDiv.innerHTML = 'Erreur réseau: ' + error;
         msgDiv.style.background = '#f8d7da';
         msgDiv.style.color = '#721c24';
         
-        // ✅ RÉACTIVER LE BOUTON EN CAS D'ERREUR
+        // RÉACTIVER LE BOUTON EN CAS D'ERREUR
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '✅ Ajouter';
+            btn.innerHTML = 'Ajouter';
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
         }
@@ -346,7 +346,7 @@ function ajouterProduit() {
 
     // ========== SUPPRIMER UN PRODUIT ==========
     function supprimerProduit(nom) {
-        if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${nom}" ?\n\nCette action est irréversible !`)) {
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer "${nom}" ?\n\nCette action est irréversible !`)) {
             return;
         }
         
@@ -358,7 +358,7 @@ function ajouterProduit() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('catalogueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ ' + data.message + '</div>';
+                document.getElementById('catalogueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">' + data.message + '</div>';
                 chargerCatalogue();
                 setTimeout(() => { document.getElementById('catalogueMessage').innerHTML = ''; }, 3000);
             } else {
@@ -390,7 +390,7 @@ function ajouterProduit() {
         var btn = document.getElementById('btnEditSave');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '💾 Enregistrer';
+            btn.innerHTML = 'Enregistrer';
         }
     }
     
@@ -412,7 +412,7 @@ function ajouterProduit() {
             alert('Le nom du produit est obligatoire');
             return;
         }
-        // ✅ Prix d'achat optionnel - on met 0 si vide
+        // Prix d'achat optionnel - on met 0 si vide
         if (!prixAchat || prixAchat <= 0) {
             prixAchat = 0;
         }
@@ -450,36 +450,36 @@ function ajouterProduit() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                msgDiv.innerHTML = '✅ ' + data.message;
+                msgDiv.innerHTML = '' + data.message;
                 msgDiv.style.background = '#d4edda';
                 msgDiv.style.color = '#155724';
                 
                 setTimeout(function() {
                     fermerEditModal();
                     chargerCatalogue();
-                    document.getElementById('catalogueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ ' + data.message + '</div>';
+                    document.getElementById('catalogueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">' + data.message + '</div>';
                     setTimeout(() => { document.getElementById('catalogueMessage').innerHTML = ''; }, 3000);
                 }, 1500);
             } else {
-                msgDiv.innerHTML = '❌ ' + data.error;
+                msgDiv.innerHTML = '' + data.error;
                 msgDiv.style.background = '#f8d7da';
                 msgDiv.style.color = '#721c24';
                 
                 // Réactiver le bouton en cas d'erreur
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = '💾 Enregistrer';
+                    btn.innerHTML = 'Enregistrer';
                 }
             }
         })
         .catch(function(error) {
-            msgDiv.innerHTML = '❌ Erreur réseau: ' + error;
+            msgDiv.innerHTML = 'Erreur réseau: ' + error;
             msgDiv.style.background = '#f8d7da';
             msgDiv.style.color = '#721c24';
             
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '💾 Enregistrer';
+                btn.innerHTML = 'Enregistrer';
             }
         });
     }
@@ -590,7 +590,7 @@ function imprimerCatalogue() {
             </head>
             <body>
                 <div class="entete">
-                    <h1>📋 CATALOGUE DES PRODUITS</h1>
+                    <h1>CATALOGUE DES PRODUITS</h1>
                     <h2>{{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
                     <div class="date">Imprimé le : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</div>
                 </div>
@@ -657,35 +657,35 @@ function imprimerCatalogue() {
                 <div class="total">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; text-align: center;">
                         <div>
-                            <div style="font-size: 12px; color: #666;">📦 Total produits</div>
+                            <div style="font-size: 12px; color: #666;">Total produits</div>
                             <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">${totalProduits}</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #666;">📊 Stock total</div>
+                            <div style="font-size: 12px; color: #666;">Stock total</div>
                             <div style="font-size: 20px; font-weight: bold; color: #17a2b8;">${totalStock}</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #666;">💰 Valeur stock (vente)</div>
+                            <div style="font-size: 12px; color: #666;">Valeur stock (vente)</div>
                             <div style="font-size: 20px; font-weight: bold; color: #28a745;">${totalValeur.toLocaleString()} FCFA</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #666;">💰 Valeur stock (achat)</div>
+                            <div style="font-size: 12px; color: #666;">Valeur stock (achat)</div>
                             <div style="font-size: 20px; font-weight: bold; color: #ffc107;">${totalAchat.toLocaleString()} FCFA</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #666;">⚠️ En alerte</div>
+                            <div style="font-size: 12px; color: #666;">En alerte</div>
                             <div style="font-size: 20px; font-weight: bold; color: #856404;">${enAlerte}</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #666;">🚫 En rupture</div>
+                            <div style="font-size: 12px; color: #666;">En rupture</div>
                             <div style="font-size: 20px; font-weight: bold; color: #dc3545;">${enRupture}</div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="footer">
-                    <p>📋 Catalogue généré automatiquement - GBoutik-MediLogic</p>
-                    <p>🔒 Document confidentiel - Usage interne</p>
+                    <p>Catalogue généré automatiquement - GBoutik-MediLogic</p>
+                    <p>Document confidentiel - Usage interne</p>
                 </div>
                 
                 <script>

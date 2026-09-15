@@ -1,27 +1,27 @@
 <div class="card">
-    <h2>💸 Charges de la boutique - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <h2>Charges de la boutique - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
     <div id="chargeMessage"></div>
 
-    <h3>➕ Nouvelle charge</h3>
+    <h3>Nouvelle charge</h3>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
         <select id="newCategorie" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
-            <option value="Loyer">🏠 Loyer</option>
-            <option value="Électricité">💡 Électricité</option>
-            <option value="Eau">💧 Eau</option>
-            <option value="Transport">🚚 Transport</option>
-            <option value="Salaire">👥 Salaire</option>
-            <option value="Fournitures">📦 Fournitures</option>
-            <option value="Autre">📝 Autre</option>
+            <option value="Loyer">Loyer</option>
+            <option value="Électricité">Électricité</option>
+            <option value="Eau">Eau</option>
+            <option value="Transport">Transport</option>
+            <option value="Salaire">Salaire</option>
+            <option value="Fournitures">Fournitures</option>
+            <option value="Autre">Autre</option>
         </select>
         <input type="number" id="newMontant" placeholder="Montant (FCFA)" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
         <input type="text" id="newMotif" placeholder="Motif / description" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
     </div>
-    <button onclick="demanderCharge()" style="width:100%; background:#dc3545; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">💸 Enregistrer la charge</button>
+    <button onclick="demanderCharge()" style="width:100%; background:#dc3545; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">Enregistrer la charge</button>
     <p style="text-align:center; color:#666; font-size:13px; margin-top:-20px; margin-bottom:25px;">
         {% if user_role == 'vendeur' %}La charge sera envoyée au gérant pour validation avant d'impacter la caisse.{% else %}En tant que gérant, vous pouvez valider directement vos propres charges ci-dessous.{% endif %}
     </p>
 
-    <h3>📋 Historique des charges</h3>
+    <h3>Historique des charges</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -87,19 +87,19 @@
         .then(data => {
             var msgDiv = document.getElementById('chargeMessage');
             if (data.success) {
-                msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">✅ ' + data.message + '</div>';
+                msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.message + '</div>';
                 document.getElementById('newMontant').value = '';
                 document.getElementById('newMotif').value = '';
                 chargerCharges();
             } else {
-                msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">❌ ' + data.error + '</div>';
+                msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.error + '</div>';
             }
         });
     }
 
     function statutBadge(statut) {
-        if (statut === 'VALIDEE') return '<span class="badge badge-validee">✅ Validée</span>';
-        if (statut === 'REFUSEE') return '<span class="badge badge-refusee">❌ Refusée</span>';
+        if (statut === 'VALIDEE') return '<span class="badge badge-validee">Validée</span>';
+        if (statut === 'REFUSEE') return '<span class="badge badge-refusee">Refusée</span>';
         return '<span class="badge badge-attente">⏳ En attente</span>';
     }
 
@@ -149,11 +149,11 @@
                     if (c.statut === 'EN_ATTENTE' && userRole !== 'vendeur') {
                         var btnV = document.createElement('button');
                         btnV.className = 'btn-action btn-valider';
-                        btnV.textContent = '✅ Valider';
+                        btnV.textContent = 'Valider';
                         btnV.onclick = function() { traiterCharge(c.id, 'valider'); };
                         var btnR = document.createElement('button');
                         btnR.className = 'btn-action btn-refuser';
-                        btnR.textContent = '❌ Refuser';
+                        btnR.textContent = 'Refuser';
                         btnR.onclick = function() { traiterCharge(c.id, 'refuser'); };
                         actionCell.appendChild(btnV);
                         actionCell.appendChild(btnR);

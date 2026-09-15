@@ -65,8 +65,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>👑 Admin Global - GBoutik-MediLogic</h1>
-        <a href="/logout_admin" class="logout-btn">🔓 Déconnexion</a>
+        <h1>Admin Global - GBoutik-MediLogic</h1>
+        <a href="/logout_admin" class="logout-btn">Déconnexion</a>
     </div>
     
     <div class="stats">
@@ -77,14 +77,14 @@
     </div>
     
     <div class="tabs">
-        <button class="tab active" onclick="changerOnglet('toutes')">📋 Toutes les boutiques</button>
+        <button class="tab active" onclick="changerOnglet('toutes')">Toutes les boutiques</button>
         <button class="tab" onclick="changerOnglet('attente')">⏳ En attente</button>
-        <button class="tab" onclick="changerOnglet('actives')">✅ Actives</button>
-        <button class="tab" onclick="changerOnglet('refusees')">❌ Refusées</button>
+        <button class="tab" onclick="changerOnglet('actives')">Actives</button>
+        <button class="tab" onclick="changerOnglet('refusees')">Refusées</button>
     </div>
     
     <div class="card">
-        <h2>📋 Liste des boutiques</h2>
+        <h2>Liste des boutiques</h2>
         <div class="table-container">
             <table id="boutiquesTable">
                 <thead>
@@ -101,29 +101,29 @@
     
     <!-- SECTION RÉINITIALISATION DES MOTS DE PASSE -->
     <div class="card">
-        <h2>🔐 Réinitialisation des mots de passe</h2>
+        <h2>Réinitialisation des mots de passe</h2>
         <div id="resetMessage" style="display:none;"></div>
         
         <div class="form-group">
-            <label>👤 Type de compte</label>
+            <label>Type de compte</label>
             <select id="resetRole" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-                <option value="boutique">🏪 Gérant de boutique</option>
-                <option value="vendeur">👤 Vendeur</option>
+                <option value="boutique">Gérant de boutique</option>
+                <option value="vendeur">Vendeur</option>
             </select>
         </div>
         
         <div class="form-group">
-            <label>📧 Email (pour gérant) / Nom d'utilisateur (pour vendeur)</label>
+            <label>Email (pour gérant) / Nom d'utilisateur (pour vendeur)</label>
             <input type="text" id="resetEmail" placeholder="ex: gerant@boutique.com ou vendeur1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         
         <div class="form-group">
-            <label>🔑 Nouveau mot de passe</label>
+            <label>Nouveau mot de passe</label>
             <input type="password" id="resetNewPassword" placeholder="Nouveau mot de passe (min 4 caractères)" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         
         <button onclick="resetPassword()" style="background:#f59e0b; color:white; border:none; border-radius:8px; padding:12px 20px; cursor:pointer; width:100%; font-weight:bold;">
-            🔄 Réinitialiser le mot de passe
+            Réinitialiser le mot de passe
         </button>
     </div>
     
@@ -180,11 +180,11 @@
                 
                 let statutHtml = '';
                 if (b.actif === 'oui') {
-                    statutHtml = '<span style="color:#28a745; font-weight:bold;">✅ Active</span>';
+                    statutHtml = '<span style="color:#28a745; font-weight:bold;">Active</span>';
                 } else if (b.actif === 'non') {
                     statutHtml = '<span style="color:#f59e0b; font-weight:bold;">⏳ En attente</span>';
                 } else {
-                    statutHtml = '<span style="color:#dc3545; font-weight:bold;">❌ Refusée</span>';
+                    statutHtml = '<span style="color:#dc3545; font-weight:bold;">Refusée</span>';
                 }
                 row.insertCell(5).innerHTML = statutHtml;
                 
@@ -192,7 +192,7 @@
                 
                 if (b.actif === 'non') {
                     let btnAccepter = document.createElement('button');
-                    btnAccepter.textContent = '✅ Accepter';
+                    btnAccepter.textContent = 'Accepter';
                     btnAccepter.className = 'btn-accepter';
                     btnAccepter.onclick = (function(email) {
                         return function() { traiterDemande(email, 'activer'); };
@@ -200,7 +200,7 @@
                     actionCell.appendChild(btnAccepter);
                     
                     let btnRefuser = document.createElement('button');
-                    btnRefuser.textContent = '❌ Refuser';
+                    btnRefuser.textContent = 'Refuser';
                     btnRefuser.className = 'btn-refuser';
                     btnRefuser.onclick = (function(email) {
                         return function() { traiterDemande(email, 'refuser'); };
@@ -208,7 +208,7 @@
                     actionCell.appendChild(btnRefuser);
                 } else if (b.actif === 'oui') {
                     let btnDesactiver = document.createElement('button');
-                    btnDesactiver.textContent = '🔒 Désactiver';
+                    btnDesactiver.textContent = 'Désactiver';
                     btnDesactiver.className = 'btn-refuser';
                     btnDesactiver.onclick = (function(email) {
                         return function() { traiterDemande(email, 'refuser'); };
@@ -216,7 +216,7 @@
                     actionCell.appendChild(btnDesactiver);
                 } else {
                     let btnReactiver = document.createElement('button');
-                    btnReactiver.textContent = '🔄 Réactiver';
+                    btnReactiver.textContent = 'Réactiver';
                     btnReactiver.className = 'btn-activer';
                     btnReactiver.onclick = (function(email) {
                         return function() { traiterDemande(email, 'activer'); };
@@ -263,14 +263,14 @@
             var messageDiv = document.getElementById('resetMessage');
             
             if (!email || !nouveauMdp) {
-                messageDiv.innerHTML = '<div class="error-msg">❌ Veuillez remplir tous les champs</div>';
+                messageDiv.innerHTML = '<div class="error-msg">Veuillez remplir tous les champs</div>';
                 messageDiv.style.display = 'block';
                 setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
                 return;
             }
             
             if (nouveauMdp.length < 4) {
-                messageDiv.innerHTML = '<div class="error-msg">❌ Le mot de passe doit contenir au moins 4 caractères</div>';
+                messageDiv.innerHTML = '<div class="error-msg">Le mot de passe doit contenir au moins 4 caractères</div>';
                 messageDiv.style.display = 'block';
                 setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
                 return;
@@ -291,17 +291,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    messageDiv.innerHTML = '<div class="success-msg">✅ ' + data.message + '</div>';
+                    messageDiv.innerHTML = '<div class="success-msg">' + data.message + '</div>';
                     document.getElementById('resetEmail').value = '';
                     document.getElementById('resetNewPassword').value = '';
                     setTimeout(() => { messageDiv.style.display = 'none'; }, 5000);
                 } else {
-                    messageDiv.innerHTML = '<div class="error-msg">❌ ' + data.error + '</div>';
+                    messageDiv.innerHTML = '<div class="error-msg">' + data.error + '</div>';
                     setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
                 }
             })
             .catch(error => {
-                messageDiv.innerHTML = '<div class="error-msg">❌ Erreur: ' + error.message + '</div>';
+                messageDiv.innerHTML = '<div class="error-msg">Erreur: ' + error.message + '</div>';
                 setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
             });
         }

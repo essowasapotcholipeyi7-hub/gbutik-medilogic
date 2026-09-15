@@ -1,5 +1,5 @@
 <div class="card">
-  <h2>📊 Caisse journalière</h2>
+  <h2>Caisse journalière</h2>
   <div id="caisseMessage"></div>
   
   <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; border-radius: 20px; padding: 30px; text-align: center; margin-bottom: 20px;">
@@ -20,7 +20,7 @@
       <tbody id="caisseJourBody"><tr><td colspan="6">Chargement...</td></tr></tbody>
     </table>
   </div>
-  <button onclick="chargerCaisseJour()" style="margin-top:15px; background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">🔄 Actualiser</button>
+  <button onclick="chargerCaisseJour()" style="margin-top:15px; background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px;">Actualiser</button>
 </div>
 
 <style>
@@ -39,7 +39,7 @@
         document.getElementById('nbVentesJour').innerHTML = data.nbVentes || 0;
         document.getElementById('nbProduitsVendusJour').innerHTML = data.nbProduitsVendus || 0;
         document.getElementById('remiseTotaleJour').innerHTML = (data.remiseTotale || 0).toLocaleString();
-        document.getElementById('dateJour').innerHTML = '📅 ' + (data.date || '');
+        document.getElementById('dateJour').innerHTML = '' + (data.date || '');
         
         var tbody = document.getElementById('caisseJourBody');
         tbody.innerHTML = '';

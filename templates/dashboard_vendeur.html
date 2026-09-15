@@ -220,40 +220,40 @@
 <body>
   <div class="card">
     <div class="user-avatar">
-      👤
+      
     </div>
     <h2>Bonjour, {{ session.user_nom if session.user_nom else 'Vendeur' }}</h2>
     <div class="subtitle">Espace de travail</div>
 
     <div class="menu">
       <a href="/vente_boutique" class="menu-item vente">
-        <span class="menu-icon">💰</span>
+        <span class="menu-icon"></span>
         <span>Vente</span>
       </a>
       <a href="/caisse_journaliere" class="menu-item caisse">
-        <span class="menu-icon">📊</span>
+        <span class="menu-icon"></span>
         <span>Caisse journalière</span>
       </a>
       <a href="/messages_vendeur" class="menu-item messages">
-        <span class="menu-icon">💬</span>
+        <span class="menu-icon"></span>
         <span>Messages</span>
       </a>
       <a href="/charges" class="menu-item charges">
-        <span class="menu-icon">💸</span>
+        <span class="menu-icon"></span>
         <span>Charges</span>
       </a>
       <a href="/creances" class="menu-item creances">
-        <span class="menu-icon">🧾</span>
+        <span class="menu-icon"></span>
         <span>Créances</span>
       </a>
       <a href="/deconnexion" class="menu-item deconnexion">
-        <span class="menu-icon">🔓</span>
+        <span class="menu-icon"></span>
         <span>Déconnexion</span>
       </a>
     </div>
 
     <div class="securite-box">
-      <p>🔐 Connexion sans mot de passe (Face ID / Windows Hello / empreinte) sur cet appareil :</p>
+      <p>Connexion sans mot de passe (Face ID / Windows Hello / empreinte) sur cet appareil :</p>
       <div id="listeAppareils"></div>
       <button class="btn-securite" id="btnAjouterAppareil" onclick="inscrireAppareil()">+ Activer sur cet appareil</button>
       <div id="securiteMessage" style="font-size:0.75rem; margin-top:8px;"></div>
@@ -282,7 +282,7 @@
         }
         zone.innerHTML = d.data.map(a => `
           <div class="appareil-item">
-            <span>📱 ${escapeHtml(a.libelle_appareil || 'Appareil')}</span>
+            <span>${escapeHtml(a.libelle_appareil || 'Appareil')}</span>
             <span style="color:#f87171; cursor:pointer;" onclick="revoquerAppareil(${a.ligne})">Retirer</span>
           </div>`).join('');
       }).catch(() => {});

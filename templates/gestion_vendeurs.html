@@ -1,5 +1,5 @@
 <div class="card">
-    <h2>👥 Gestion des vendeurs - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <h2>Gestion des vendeurs - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
     <div id="vendeurMessage"></div>
     
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
@@ -8,9 +8,9 @@
         <input type="text" id="newNom" placeholder="Nom complet" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
     </div>
     
-    <button onclick="ajouterVendeur()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">➕ Ajouter un vendeur</button>
+    <button onclick="ajouterVendeur()" style="width:100%; background:#28a745; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">Ajouter un vendeur</button>
     
-    <h3>📋 Liste des vendeurs</h3>
+    <h3>Liste des vendeurs</h3>
     <div class="table-container">
         <table>
             <thead>
@@ -59,10 +59,10 @@
                     row.insertCell(0).textContent = v.id || '';
                     row.insertCell(1).innerHTML = '<strong>' + (v.username || '-') + '</strong>';
                     row.insertCell(2).textContent = v.nom || '';
-                    row.insertCell(3).innerHTML = v.actif ? '<span class="actif">✅ Actif</span>' : '<span class="inactif">❌ Inactif</span>';
+                    row.insertCell(3).innerHTML = v.actif ? '<span class="actif">Actif</span>' : '<span class="inactif">Inactif</span>';
                     
                     var btn = document.createElement('button');
-                    btn.textContent = v.actif ? '🔒 Désactiver' : '✅ Activer';
+                    btn.textContent = v.actif ? 'Désactiver' : 'Activer';
                     btn.style = v.actif ? 'background:#dc3545; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;' : 'background:#28a745; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;';
                     btn.onclick = (function(id, actif) {
                         return function() { toggleVendeur(id, actif); };

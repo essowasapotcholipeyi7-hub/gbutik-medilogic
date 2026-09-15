@@ -1,7 +1,7 @@
 <div class="card">
     <!-- En-tête avec bouton retour en haut à droite -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <h2>📜 Historique des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+        <h2>Historique des ventes - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
         <a href="/dashboard_boutique" style="background:#6c757d; color:white; padding:8px 20px; border-radius:8px; text-decoration:none;">
             ← Retour
         </a>
@@ -12,29 +12,29 @@
     <!-- Filtres -->
     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;">
         <div style="flex: 1; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📆 Période</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Période</label>
             <select id="periodeFilter" onchange="changerPeriode()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
                 <option value="all">Toutes les ventes</option>
-                <option value="today">📅 Aujourd'hui</option>
-                <option value="week">📆 Cette semaine</option>
-                <option value="month">📆 Ce mois</option>
-                <option value="custom">📅 Période personnalisée</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+                <option value="custom">Période personnalisée</option>
             </select>
         </div>
         <div id="dateDebutGroup" style="display: none; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date début</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Date début</label>
             <input type="date" id="dateDebut" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         <div id="dateFinGroup" style="display: none; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📅 Date fin</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Date fin</label>
             <input type="date" id="dateFin" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         <div style="flex: 1; min-width: 150px;">
-            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🔎 Rechercher</label>
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Rechercher</label>
             <input type="text" id="searchInput" placeholder="Produit ou vendeur..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
         <div>
-            <button onclick="appliquerFiltres()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔍 Appliquer</button>
+            <button onclick="appliquerFiltres()" style="background:#1e3a8a; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Appliquer</button>
         </div>
     </div>
 
@@ -61,10 +61,10 @@
     
     <!-- Boutons d'export -->
     <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <button onclick="chargerHistorique()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🔄 Actualiser</button>
-        <button onclick="exporterCSV()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">📥 Exporter CSV</button>
-        <button onclick="exporterPDF()" style="background:#dc3545; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">📄 Exporter PDF</button>
-        <button onclick="imprimer()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">🖨️ Imprimer</button>
+        <button onclick="chargerHistorique()" style="background:#17a2b8; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Actualiser</button>
+        <button onclick="exporterCSV()" style="background:#28a745; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Exporter CSV</button>
+        <button onclick="exporterPDF()" style="background:#dc3545; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Exporter PDF</button>
+        <button onclick="imprimer()" style="background:#6c757d; color:white; border:none; border-radius:8px; padding:10px 20px; cursor:pointer;">Imprimer</button>
     </div>
 </div>
 
@@ -242,7 +242,7 @@
         link.click();
         URL.revokeObjectURL(url);
         
-        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ Export CSV réussi</div>';
+        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">Export CSV réussi</div>';
         setTimeout(() => { document.getElementById('historiqueMessage').innerHTML = ''; }, 3000);
     }
     
@@ -292,15 +292,15 @@
             </style>
         </head>
         <body>
-            <h1>🏪 GBoutik-MediLogic</h1>
+            <h1>GBoutik-MediLogic</h1>
             <div class="header">
                 <h2>Historique des ventes</h2>
                 <p>Généré le ${today}</p>
             </div>
             <div class="summary">
-                <div class="summary-item">💰 Total CA: ${totalCA.toLocaleString('fr-FR')} FCFA</div>
-                <div class="summary-item">📦 Nombre de ventes: ${totalVentes}</div>
-                <div class="summary-item">🔢 Produits vendus: ${totalProduits}</div>
+                <div class="summary-item">Total CA: ${totalCA.toLocaleString('fr-FR')} FCFA</div>
+                <div class="summary-item">Nombre de ventes: ${totalVentes}</div>
+                <div class="summary-item">Produits vendus: ${totalProduits}</div>
             </div>
             <table>
                 <thead><tr><th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total</th><th>Vendeur</th></tr></thead>
@@ -315,7 +315,7 @@
         printWindow.document.close();
         printWindow.print();
         
-        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">✅ PDF généré</div>';
+        document.getElementById('historiqueMessage').innerHTML = '<div style="background:#d4edda; padding:10px; border-radius:8px;">PDF généré</div>';
         setTimeout(() => { document.getElementById('historiqueMessage').innerHTML = ''; }, 3000);
     }
     

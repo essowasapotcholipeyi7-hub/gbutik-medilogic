@@ -1,5 +1,5 @@
 <div class="card">
-    <h2>💬 Messagerie - {{ session.user_nom if session.user_nom else 'Vendeur' }}</h2>
+    <h2>Messagerie - {{ session.user_nom if session.user_nom else 'Vendeur' }}</h2>
     <div id="messageResult"></div>
     
     <div class="chat-container">
@@ -9,7 +9,7 @@
         
         <div class="chat-input">
             <textarea id="messageInput" rows="2" placeholder="Écrivez votre message au gérant..."></textarea>
-            <button onclick="envoyerMessage()">📤 Envoyer</button>
+            <button onclick="envoyerMessage()">Envoyer</button>
         </div>
     </div>
     
@@ -96,7 +96,7 @@
             .then(messages => {
                 var container = document.getElementById('chatMessages');
                 if (!messages || messages.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">📭 Aucun message</div>';
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Aucun message</div>';
                     return;
                 }
                 var html = '';
