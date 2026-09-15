@@ -624,6 +624,10 @@ def api_valider_vente():
             ])
 
         # Enregistrer la vente (colonnes J/K/L réservées à l'annulation, voir traiter_correction_vente)
+        # table_range='A1' est OBLIGATOIRE ici : avec les colonnes J/K/L vides
+        # entre "vendeur" et "montant_encaisse", l'auto-détection de tableau de
+        # l'API Sheets peut confondre M/N pour un second tableau et décaler les
+        # appends suivants de plusieurs colonnes (bug constaté en production).
         ventes_sheet.append_row([
             vente_id,
             datetime.now().strftime('%d/%m/%Y'),
@@ -637,7 +641,7 @@ def api_valider_vente():
             '', '', '',
             montant_paye,
             creance_id
-        ])
+        ], table_range='A1')
         
         # Mettre à jour le stock
         nouveau_stock = ancien_stock - quantite
@@ -756,6 +760,7 @@ def api_valider_panier():
                         break
             
             # Enregistrer la vente (colonnes J/K/L réservées à l'annulation, voir traiter_correction_vente)
+            # table_range='A1' : voir le commentaire équivalent dans api_valider_vente.
             montant_encaisse_article = round(total_article * ratio_encaisse)
             ventes_sheet.append_row([
                 vente_id,
@@ -770,7 +775,7 @@ def api_valider_panier():
                 '', '', '',
                 montant_encaisse_article,
                 creance_id
-            ])
+            ], table_range='A1')
             
             # Mettre à jour le stock
             nouveau_stock = ancien_stock - item['quantite']
