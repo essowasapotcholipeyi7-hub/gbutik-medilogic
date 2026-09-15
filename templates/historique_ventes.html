@@ -298,7 +298,9 @@
 
         var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu - ' + boutiqueNom + '</title>' +
             '<style>' +
-            'body { font-family:\'Segoe UI\', Arial, sans-serif; padding:0; margin:0; display:flex; justify-content:center; }' +
+            'body { font-family:\'Segoe UI\', Arial, sans-serif; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; }' +
+            '.barre-fermer { width:100%; background:#f1f3f5; padding:10px 20px; text-align:right; box-sizing:border-box; }' +
+            '.barre-fermer button { background:#6c757d; color:white; border:none; border-radius:8px; padding:8px 20px; cursor:pointer; font-size:14px; }' +
             '.recu { width:350px; max-width:100%; }' +
             '.recu-header { background:#1e3a8a; color:white; padding:20px; text-align:center; }' +
             '.recu-header h2 { margin:0 0 10px 0; font-size:18px; }' +
@@ -310,7 +312,9 @@
             '.recu-grand-total td { padding-top:10px; border-top:2px solid #1e3a8a; font-size:16px; font-weight:bold; }' +
             '.recu-footer { background:#f8f9fa; padding:15px; text-align:center; font-size:11px; color:#666; }' +
             '.reimpression { background:#fff3cd; color:#856404; text-align:center; padding:6px; font-size:11px; font-weight:bold; }' +
+            '@media print { .barre-fermer { display:none; } }' +
             '</style></head><body>' +
+            '<div class="barre-fermer"><button onclick="window.close()">Fermer</button></div>' +
             '<div class="recu">' +
             '<div class="reimpression">RÉIMPRESSION DE REÇU</div>' +
             '<div class="recu-header">' +
@@ -331,7 +335,7 @@
             '</div>' +
             '<div class="recu-footer"><p>Merci de votre visite !</p></div>' +
             '</div>' +
-            '<script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 1000); };<' + '/script>' +
+            '<script>window.onload = function() { window.print(); };<' + '/script>' +
             '</body></html>';
 
         var w = window.open('', '_blank');
@@ -436,12 +440,16 @@
                 th { background: #1e3a8a; color: white; padding: 10px; }
                 td { border: 1px solid #ddd; padding: 8px; }
                 .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #666; }
+                .barre-fermer { background:#f1f3f5; padding:10px 20px; text-align:right; position:sticky; top:0; }
+                .barre-fermer button { background:#6c757d; color:white; border:none; border-radius:8px; padding:8px 20px; cursor:pointer; font-size:14px; }
                 @media print {
                     body { margin: 0; padding: 10px; }
+                    .barre-fermer { display: none; }
                 }
             </style>
         </head>
         <body>
+            <div class="barre-fermer"><button onclick="window.close()">Fermer</button></div>
             <h1>${boutiqueNom}</h1>
             <div class="header">
                 <h2>Historique des ventes</h2>
