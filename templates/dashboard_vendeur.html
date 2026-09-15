@@ -145,6 +145,39 @@
       color: #a855f7;
     }
 
+    .menu-item.charges:hover {
+      background: rgba(220, 38, 38, 0.15);
+      border-color: rgba(220, 38, 38, 0.4);
+      color: #dc2626;
+    }
+
+    .menu-item.creances:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #f59e0b;
+    }
+
+    .securite-box {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
+    }
+    .securite-box p {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+    .appareil-item {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.8rem; color: #e2e8f0; padding: 6px 0;
+    }
+    .btn-securite {
+      width: 100%; padding: 10px; margin-top: 8px;
+      background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.3);
+      color: #2dd4bf; border-radius: 50px; cursor: pointer; font-size: 0.85rem;
+    }
+
     .menu-item.deconnexion:hover {
       background: rgba(239, 68, 68, 0.15);
       border-color: rgba(239, 68, 68, 0.4);
@@ -205,15 +238,106 @@
         <span class="menu-icon">💬</span>
         <span>Messages</span>
       </a>
+      <a href="/charges" class="menu-item charges">
+        <span class="menu-icon">💸</span>
+        <span>Charges</span>
+      </a>
+      <a href="/creances" class="menu-item creances">
+        <span class="menu-icon">🧾</span>
+        <span>Créances</span>
+      </a>
       <a href="/deconnexion" class="menu-item deconnexion">
         <span class="menu-icon">🔓</span>
         <span>Déconnexion</span>
       </a>
     </div>
 
+    <div class="securite-box">
+      <p>🔐 Connexion sans mot de passe (Face ID / Windows Hello / empreinte) sur cet appareil :</p>
+      <div id="listeAppareils"></div>
+      <button class="btn-securite" id="btnAjouterAppareil" onclick="inscrireAppareil()">+ Activer sur cet appareil</button>
+      <div id="securiteMessage" style="font-size:0.75rem; margin-top:8px;"></div>
+    </div>
+
     <div class="footer-info">
       GBoutik-MediLogic · v2.0
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
+  <script>
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(text));
+      return div.innerHTML;
+    }
+
+    function chargerAppareils() {
+      fetch('/api/webauthn/mes-appareils').then(r => r.json()).then(d => {
+        const zone = document.getElementById('listeAppareils');
+        if (!d.success || !d.data.length) {
+          zone.innerHTML = '<div style="font-size:0.75rem; color:#64748b;">Aucun appareil enregistré.</div>';
+          return;
+        }
+        zone.innerHTML = d.data.map(a => `
+          <div class="appareil-item">
+            <span>📱 ${escapeHtml(a.libelle_appareil || 'Appareil')}</span>
+            <span style="color:#f87171; cursor:pointer;" onclick="revoquerAppareil(${a.ligne})">Retirer</span>
+          </div>`).join('');
+      }).catch(() => {});
+    }
+
+    function revoquerAppareil(ligne) {
+      if (!confirm('Retirer cet appareil ?')) return;
+      fetch('/api/webauthn/appareils/' + ligne, { method: 'DELETE' }).then(r => r.json()).then(d => {
+        if (d.success) chargerAppareils();
+        else alert('Erreur : ' + (d.error || 'inconnue'));
+      });
+    }
+
+    async function inscrireAppareil() {
+      const msg = document.getElementById('securiteMessage');
+      if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+        msg.style.color = '#f87171';
+        msg.textContent = "Non disponible sur cet appareil/navigateur.";
+        return;
+      }
+      msg.style.color = '#94a3b8';
+      msg.textContent = 'Suivez les instructions de votre appareil...';
+      try {
+        const rOpt = await fetch('/api/webauthn/inscription/options', { method: 'POST' });
+        const dOpt = await rOpt.json();
+        if (!dOpt.success) { msg.style.color = '#f87171'; msg.textContent = dOpt.error; return; }
+
+        const credential = await SimpleWebAuthnBrowser.startRegistration(dOpt.options);
+        const libelle = prompt('Nom de cet appareil :', navigator.platform || 'Mon appareil');
+
+        const rVer = await fetch('/api/webauthn/inscription/verifier', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential, libelle_appareil: libelle }),
+        });
+        const dVer = await rVer.json();
+        if (dVer.success) {
+          msg.style.color = '#4ade80';
+          msg.textContent = 'Appareil ajouté !';
+          chargerAppareils();
+        } else {
+          msg.style.color = '#f87171';
+          msg.textContent = dVer.error;
+        }
+      } catch (err) {
+        msg.style.color = '#f87171';
+        msg.textContent = (err.name === 'InvalidStateError')
+          ? 'Cet appareil est déjà enregistré.'
+          : ('Échec : ' + (err.message || err));
+      }
+    }
+
+    if (!window.SimpleWebAuthnBrowser) {
+      document.getElementById('btnAjouterAppareil').disabled = true;
+    }
+    chargerAppareils();
+  </script>
 </body>
 </html>

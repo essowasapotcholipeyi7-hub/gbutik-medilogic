@@ -771,23 +771,49 @@ function afficherRecapVente() {
     validerVente();
 }
 
+// Demande le montant réellement payé par le client. Si c'est moins que le
+// total, une créance est enregistrée pour la différence (nom du client
+// requis). Retourne null si l'utilisateur annule.
+function demanderPaiementCreance(total) {
+    var saisie = prompt('Montant payé par le client (FCFA) :', total);
+    if (saisie === null) return null; // annulé
+    var montantPaye = parseFloat(saisie);
+    if (isNaN(montantPaye) || montantPaye < 0) montantPaye = total;
+    if (montantPaye > total) montantPaye = total;
+
+    var clientNom = '', clientTelephone = '';
+    if (montantPaye < total - 0.01) {
+        var montantDu = total - montantPaye;
+        clientNom = prompt('⚠️ Le client doit encore ' + montantDu.toLocaleString() + ' FCFA.\nNom du client (obligatoire pour enregistrer la créance) :', '');
+        if (!clientNom) {
+            alert('Nom du client requis pour enregistrer une créance. Vente annulée.');
+            return null;
+        }
+        clientTelephone = prompt('Téléphone du client (optionnel) :', '') || '';
+    }
+    return { montantPaye: montantPaye, clientNom: clientNom, clientTelephone: clientTelephone };
+}
+
 function validerVente() {
     var produit = document.getElementById('produitSelect').value;
     var quantite = parseInt(document.getElementById('quantite').value);
     var prixVendu = parseFloat(document.getElementById('prixVendu').value);
     var remise = parseFloat(document.getElementById('remise').value);
     var total = (quantite * prixVendu) - remise;
-    
+
     if (!produit) { alert('Sélectionnez un produit'); return; }
     if (quantite <= 0) { alert('Quantité invalide'); return; }
-    
+
     // Vérifier le stock
     var p = tousProduits.find(x => x.nom === produit);
     if (p && quantite > p.stock) {
         alert(`Stock insuffisant ! Stock disponible: ${p.stock} unités`);
         return;
     }
-    
+
+    var infosPaiement = demanderPaiementCreance(total);
+    if (!infosPaiement) return;
+
     // ========== AFFICHER LA BARRE DE PROGRESSION ==========
     var progressContainer = document.getElementById('progressContainer');
     var progressBar = document.getElementById('progressBar');
@@ -864,7 +890,10 @@ function validerVente() {
             quantite: quantite,
             prixVente: prixVendu,
             remise: remise,
-            total: total
+            total: total,
+            montantPaye: infosPaiement.montantPaye,
+            clientNom: infosPaiement.clientNom,
+            clientTelephone: infosPaiement.clientTelephone
         })
     })
     .then(response => response.json())
@@ -1128,9 +1157,12 @@ function validerPanier() {
     msg += "\n🎁 Remise : " + remiseGlobale.toLocaleString() + " FCFA";
     msg += "\n✅ Total à payer : " + totalFinal.toLocaleString() + " FCFA";
     msg += "\n\nConfirmer la vente ?";
-    
+
     if (!confirm(msg)) return;
-    
+
+    var infosPaiement = demanderPaiementCreance(totalFinal);
+    if (!infosPaiement) return;
+
     // ========== RÉCUPÉRER LES ÉLÉMENTS ==========
     var progressContainer = document.getElementById('progressContainer');
     var progressBar = document.getElementById('progressBar');
@@ -1217,7 +1249,10 @@ function validerPanier() {
         body: JSON.stringify({
             panier: panier,
             remiseGlobale: remiseGlobale,
-            totalFinal: totalFinal
+            totalFinal: totalFinal,
+            montantPaye: infosPaiement.montantPaye,
+            clientNom: infosPaiement.clientNom,
+            clientTelephone: infosPaiement.clientTelephone
         })
     })
     .then(response => response.json())

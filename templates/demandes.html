@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GBoutik-MediLogic — Demandes en attente</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1d35; --navy-light: #1c3358; --accent: #2dd4bf; --accent-dim: rgba(45,212,191,0.15);
+      --danger: #f87171; --danger-dim: rgba(248,113,113,0.12); --success: #4ade80; --success-dim: rgba(74,222,128,0.12);
+      --warn: #fb923c; --warn-dim: rgba(251,146,60,0.12); --text: #e2eaf5; --text-muted: #7a92b0; --text-dim: #4a6280;
+      --border: rgba(255,255,255,0.07); --card: rgba(255,255,255,0.04); --radius: 16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--text); min-height: 100vh; }
+    .header { background: rgba(11,29,53,0.85); border-bottom: 1px solid var(--border); padding: 0 32px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .header-brand h1 { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); }
+    .btn-deco { display: flex; align-items: center; gap: 8px; padding: 8px 18px; background: transparent; border: 1px solid var(--border); border-radius: 50px; color: var(--text-muted); text-decoration: none; font-size: 13px; }
+    .btn-deco:hover { border-color: var(--accent); color: var(--accent); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 32px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 20px; }
+    .page-title span { color: var(--accent); }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { padding: 8px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); cursor: pointer; font-size: 13px; }
+    .tab-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .demande-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .demande-info { flex: 1; min-width: 220px; }
+    .demande-resume { font-size: 14px; margin-bottom: 6px; }
+    .demande-meta { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+    .badge { padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .badge-attente { background: var(--warn-dim); color: var(--warn); }
+    .badge-validee { background: var(--success-dim); color: var(--success); }
+    .badge-refusee { background: var(--danger-dim); color: var(--danger); }
+    .demande-actions { display: flex; gap: 8px; }
+    .btn-action { border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 500; }
+    .btn-valider { background: var(--success-dim); color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+    .btn-valider:hover { background: var(--success); color: #06281a; }
+    .btn-refuser { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+    .btn-refuser:hover { background: var(--danger); color: #3f0d0d; }
+    .empty-state { text-align: center; color: var(--text-dim); padding: 40px; }
+    @media (max-width: 600px) {
+      .container { padding: 20px 16px; }
+      .header { padding: 0 16px; }
+      .demande-item { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-brand"><h1>🔔 Demandes <span style="color:var(--accent)">en attente</span></h1></div>
+    <a href="/dashboard_boutique" class="btn-deco">← Tableau de bord</a>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-btn active" id="tabAttente" onclick="changerFiltre('EN_ATTENTE')">⏳ En attente</button>
+      <button class="tab-btn" id="tabValidees" onclick="changerFiltre('VALIDEE')">✅ Validées</button>
+      <button class="tab-btn" id="tabRefusees" onclick="changerFiltre('REFUSEE')">❌ Refusées</button>
+      <button class="tab-btn" id="tabToutes" onclick="changerFiltre('TOUTES')">📋 Toutes</button>
+    </div>
+    <div id="demandesList">
+      <div class="empty-state">Chargement…</div>
+    </div>
+  </div>
+
+  <script>
+    let filtreActuel = 'EN_ATTENTE';
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(text));
+      return div.innerHTML;
+    }
+
+    function changerFiltre(f) {
+      filtreActuel = f;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      ({EN_ATTENTE: 'tabAttente', VALIDEE: 'tabValidees', REFUSEE: 'tabRefusees', TOUTES: 'tabToutes'})[f] &&
+        document.getElementById(({EN_ATTENTE: 'tabAttente', VALIDEE: 'tabValidees', REFUSEE: 'tabRefusees', TOUTES: 'tabToutes'})[f]).classList.add('active');
+      chargerDemandes();
+    }
+
+    function badgeStatut(statut) {
+      if (statut === 'VALIDEE') return '<span class="badge badge-validee">✅ Validée</span>';
+      if (statut === 'REFUSEE') return '<span class="badge badge-refusee">❌ Refusée</span>';
+      return '<span class="badge badge-attente">⏳ En attente</span>';
+    }
+
+    function traiterDemande(id, action) {
+      var motifRefus = '';
+      if (action === 'refuser') {
+        motifRefus = prompt('Motif du refus (optionnel) :', '') || '';
+      } else if (!confirm('Valider cette demande ?')) {
+        return;
+      }
+      fetch('/api/traiter_demande', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, action: action, motifRefus: motifRefus })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          chargerDemandes();
+        } else {
+          alert('Erreur : ' + data.error);
+        }
+      });
+    }
+
+    function chargerDemandes() {
+      fetch('/api/get_demandes?statut=' + filtreActuel)
+        .then(r => r.json())
+        .then(data => {
+          const zone = document.getElementById('demandesList');
+          if (!data || data.length === 0) {
+            zone.innerHTML = '<div class="empty-state">Aucune demande</div>';
+            return;
+          }
+          zone.innerHTML = data.map(d => {
+            let actions = '';
+            if (d.statut === 'EN_ATTENTE') {
+              actions = `
+                <div class="demande-actions">
+                  <button class="btn-action btn-valider" onclick="traiterDemande('${d.id}', 'valider')">✅ Valider</button>
+                  <button class="btn-action btn-refuser" onclick="traiterDemande('${d.id}', 'refuser')">❌ Refuser</button>
+                </div>`;
+            } else {
+              actions = `<span class="demande-meta">${d.traitePar ? 'Par ' + escapeHtml(d.traitePar) + ' — ' + d.dateTraitement : ''}</span>`;
+            }
+            return `
+              <div class="demande-item">
+                <div class="demande-info">
+                  <div class="demande-resume">${escapeHtml(d.resume)}</div>
+                  <div class="demande-meta">${d.date} ${d.heure} · Demandé par ${escapeHtml(d.demandeur)} · ${badgeStatut(d.statut)}</div>
+                </div>
+                ${actions}
+              </div>`;
+          }).join('');
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('demandesList').innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+        });
+    }
+
+    chargerDemandes();
+    setInterval(chargerDemandes, 20000);
+  </script>
+</body>
+</html>

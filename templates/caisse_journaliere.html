@@ -3,26 +3,37 @@
     <div id="caisseMessage"></div>
     
     <div class="total-jour">
-        <div>TOTAL DES VENTES AUJOURD'HUI</div>
-        <div class="montant" id="totalVentesJour">0 FCFA</div>
+        <div>CAISSE NETTE AUJOURD'HUI</div>
+        <div class="montant" id="caisseNetteJour">0 FCFA</div>
         <div id="dateJour"></div>
     </div>
-    
+
+    <div class="stats" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 10px;">
+        <div class="stat-card"><h3 id="totalEncaisseJour">0</h3><p>Encaissé sur ventes</p></div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);"><h3 id="paiementsCreancesJour">0</h3><p>+ Paiements créances</p></div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);"><h3 id="chargesValideesJour">0</h3><p>− Charges validées</p></div>
+    </div>
+
     <div class="stats">
+        <div class="stat-card"><h3 id="totalVentesJour">0</h3><p>Chiffre d'affaires (FCFA)</p></div>
         <div class="stat-card"><h3 id="nbVentesJour">0</h3><p>Ventes</p></div>
-        <div class="stat-card"><h3 id="nbProduitsVendusJour">0</h3><p>Produits vendus</p></div>
         <div class="stat-card"><h3 id="remiseTotaleJour">0</h3><p>Remises (FCFA)</p></div>
+    </div>
+
+    <div style="text-align:center; margin-bottom: 20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="/charges" style="background:#dc3545; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">💸 Charges</a>
+        <a href="/creances" style="background:#f59e0b; color:white; padding:8px 18px; border-radius:50px; text-decoration:none; font-size:13px;">🧾 Créances</a>
     </div>
     
     <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>Heure</th><th>Produit</th><th>Qté</th><th>Prix vendu</th><th>Total net</th><th>Vendeur</th>
+                    <th>Heure</th><th>Produit</th><th>Qté</th><th>Prix vendu</th><th>Total net</th><th>Encaissé</th><th>Vendeur</th>
                 </tr>
             </thead>
             <tbody id="caisseJourBody">
-                <tr><td colspan="6">Chargement...<\/td><\/tr>
+                <tr><td colspan="7">Chargement...<\/td><\/tr>
             </tbody>
         </table>
     </div>
@@ -57,19 +68,22 @@
         fetch('/api/get_caisse_jour')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('totalVentesJour').innerHTML = (data.totalVentes || 0).toLocaleString() + ' FCFA';
+                document.getElementById('caisseNetteJour').innerHTML = (data.caisseNette || 0).toLocaleString() + ' FCFA';
+                document.getElementById('totalEncaisseJour').innerHTML = (data.totalEncaisse || 0).toLocaleString();
+                document.getElementById('paiementsCreancesJour').innerHTML = '+' + (data.paiementsCreances || 0).toLocaleString();
+                document.getElementById('chargesValideesJour').innerHTML = '−' + (data.chargesValidees || 0).toLocaleString();
+                document.getElementById('totalVentesJour').innerHTML = (data.totalVentes || 0).toLocaleString();
                 document.getElementById('nbVentesJour').innerHTML = data.nbVentes || 0;
-                document.getElementById('nbProduitsVendusJour').innerHTML = data.nbProduitsVendus || 0;
                 document.getElementById('remiseTotaleJour').innerHTML = (data.remiseTotale || 0).toLocaleString() + ' FCFA';
                 document.getElementById('dateJour').innerHTML = '📅 ' + (data.date || '');
                 
                 var tbody = document.getElementById('caisseJourBody');
                 tbody.innerHTML = '';
                 if (!data.ventes || data.ventes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6">Aucune vente aujourd\'hui<\/td><\/tr>';
+                    tbody.innerHTML = '<tr><td colspan="7">Aucune vente aujourd\'hui<\/td><\/tr>';
                     return;
                 }
-                
+
                 data.ventes.forEach(function(v) {
                     var row = tbody.insertRow();
                     row.insertCell(0).textContent = v.heure || '';
@@ -77,12 +91,15 @@
                     row.insertCell(2).textContent = v.quantite || 0;
                     row.insertCell(3).textContent = (v.prixVendu || 0).toLocaleString() + ' FCFA';
                     row.insertCell(4).innerHTML = '<strong>' + (v.totalNet || 0).toLocaleString() + ' FCFA</strong>';
-                    row.insertCell(5).textContent = v.vendeur || '';
+                    var celluleEncaisse = row.insertCell(5);
+                    celluleEncaisse.textContent = (v.montantEncaisse || 0).toLocaleString() + ' FCFA';
+                    if (v.creance) celluleEncaisse.innerHTML += ' <span style="color:#dc3545; font-size:11px;">(créance)</span>';
+                    row.insertCell(6).textContent = v.vendeur || '';
                 });
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                document.getElementById('caisseJourBody').innerHTML = '<tr><td colspan="6">Erreur de chargement<\/td><\/tr>';
+                document.getElementById('caisseJourBody').innerHTML = '<tr><td colspan="7">Erreur de chargement<\/td><\/tr>';
             });
     }
     

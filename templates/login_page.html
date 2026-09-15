@@ -69,6 +69,9 @@
         .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .register-link { text-align: center; margin-top: 20px; }
         .register-link a { color: #1e3a8a; text-decoration: none; }
+        .webauthn-link { text-align: center; margin-top: 15px; }
+        .webauthn-link a { color: #2563eb; text-decoration: none; font-size: 14px; }
+        .webauthn-link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -109,12 +112,52 @@
         </div>
         
         <button onclick="seConnecter()">Se connecter</button>
-        
+
+        <div class="webauthn-link" id="zoneLienWebauthn" style="display:none;">
+            <a href="#" onclick="seConnecterWebauthn(); return false;">🔐 Se connecter avec Face ID / Windows Hello</a>
+        </div>
+
         <div class="register-link">
             <a href="/inscription">Créer une boutique</a>
         </div>
     </div>
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.SimpleWebAuthnBrowser && SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+                document.getElementById('zoneLienWebauthn').style.display = 'block';
+            }
+        });
+
+        async function seConnecterWebauthn() {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.style.display = 'none';
+            try {
+                const rOpt = await fetch('/login/webauthn/options', { method: 'POST' });
+                const dOpt = await rOpt.json();
+                if (!dOpt.success) { errorDiv.innerHTML = '❌ ' + (dOpt.error || 'Erreur'); errorDiv.style.display = 'block'; return; }
+
+                const assertion = await SimpleWebAuthnBrowser.startAuthentication(dOpt.options);
+
+                const rVer = await fetch('/login/webauthn/verifier', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: assertion }),
+                });
+                const dVer = await rVer.json();
+                if (dVer.success) {
+                    window.location.href = dVer.redirect || '/dashboard_boutique';
+                } else {
+                    errorDiv.innerHTML = '❌ ' + (dVer.error || 'Connexion refusée');
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                if (err.name === 'NotAllowedError') return; // annulé par l'utilisateur
+                errorDiv.innerHTML = '❌ Échec : ' + (err.message || err);
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
     <script>
         let roleActuel = 'gerant';
         

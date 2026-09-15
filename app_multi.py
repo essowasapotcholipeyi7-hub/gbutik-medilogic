@@ -10,6 +10,8 @@ import os
 import json
 import traceback
 import threading
+import random
+import webauthn_service
 
 # ========== CONFIGURATION EMAIL ==========
 EMAIL_EXPEDITEUR = os.environ.get('EMAIL_EXPEDITEUR', '')
@@ -59,6 +61,153 @@ def get_boutique_by_email(email):
     except:
         pass
     return None
+
+
+def get_boutique_by_id(boutique_id):
+    try:
+        sheet = spreadsheet.worksheet("BOUTIQUES")
+        data = sheet.get_all_values()
+        for i in range(1, len(data)):
+            if len(data[i]) > 0 and str(data[i][0]) == str(boutique_id):
+                return {
+                    'id': int(data[i][0]),
+                    'nom_boutique': data[i][1],
+                    'email': data[i][2] if len(data[i]) > 2 else '',
+                    'actif': data[i][7] if len(data[i]) > 7 else 'oui'
+                }
+    except:
+        pass
+    return None
+
+
+# ========== CHARGES / CRÉANCES / DEMANDES DE VALIDATION ==========
+# Une charge (dépense) ou un encaissement de créance saisi par un vendeur
+# n'a d'effet sur la caisse qu'une fois validé par le gérant. Chaque
+# saisie crée donc une ligne "EN_ATTENTE" dans sa feuille dédiée, plus une
+# ligne dans la feuille "demandes" (file d'attente générique) qui
+# alimente le badge de notification du gérant — voir /api/traiter_demande,
+# seul endroit qui exécute réellement l'effet caisse.
+
+CHARGES_HEADERS = ['id', 'date', 'heure', 'categorie', 'montant', 'motif', 'demandeur', 'statut', 'valide_par', 'date_validation', 'motif_refus']
+CREANCES_HEADERS = ['id', 'date', 'heure', 'client_nom', 'client_telephone', 'montant_total', 'montant_paye', 'montant_restant', 'statut', 'vendeur', 'reference_vente']
+CREANCES_PAIEMENTS_HEADERS = ['id', 'creance_id', 'date', 'heure', 'montant', 'demandeur', 'statut', 'valide_par', 'date_validation', 'motif_refus']
+DEMANDES_HEADERS = ['id', 'date', 'heure', 'type', 'reference_id', 'resume', 'demandeur', 'statut', 'traite_par', 'date_traitement', 'motif_refus']
+
+
+def get_or_create_sheet(boutique_id, sheet_type, headers):
+    sheet_name = f"boutique{boutique_id}_{sheet_type}"
+    try:
+        return spreadsheet.worksheet(sheet_name)
+    except:
+        sheet = spreadsheet.add_worksheet(title=sheet_name, rows=2000, cols=max(20, len(headers)))
+        sheet.append_row(headers)
+        return sheet
+
+
+def generer_id(prefixe):
+    return f"{prefixe}_{int(datetime.now().timestamp() * 1000)}_{random.randint(100, 999)}"
+
+
+def est_gerant():
+    return 'boutique_id' in session and session.get('user_role') != 'vendeur'
+
+
+def to_float_sur(val, defaut=0):
+    try:
+        if val in (None, ''):
+            return defaut
+        return float(val)
+    except (TypeError, ValueError):
+        return defaut
+
+
+def _creer_demande(boutique_id, type_demande, reference_id, resume, demandeur):
+    sheet = get_or_create_sheet(boutique_id, 'demandes', DEMANDES_HEADERS)
+    now = datetime.now()
+    sheet.append_row([
+        generer_id('DEM'), now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+        type_demande, reference_id, resume, demandeur, 'EN_ATTENTE', '', '', ''
+    ])
+
+
+def _executer_validation_charge(boutique_id, charge_id, action, traite_par, motif_refus):
+    sheet = get_sheet(boutique_id, 'charges')
+    if not sheet:
+        return False, 'Charge introuvable'
+    data = sheet.get_all_values()
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) > 0 and row[0] == charge_id:
+            if len(row) > 7 and row[7] != 'EN_ATTENTE':
+                return False, 'Cette charge a déjà été traitée'
+            now = datetime.now()
+            nouveau_statut = 'VALIDEE' if action == 'valider' else 'REFUSEE'
+            sheet.update_cell(i + 1, 8, nouveau_statut)
+            sheet.update_cell(i + 1, 9, traite_par)
+            sheet.update_cell(i + 1, 10, now.strftime('%d/%m/%Y %H:%M:%S'))
+            if motif_refus:
+                sheet.update_cell(i + 1, 11, motif_refus)
+
+            montant = to_float_sur(row[4])
+            if action == 'valider':
+                journal_sheet = get_sheet(boutique_id, 'journal')
+                if journal_sheet:
+                    journal_sheet.append_row([
+                        now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+                        'CHARGE_VALIDEE', row[3], 1, 0, 0, traite_par,
+                        f"{row[5]} | -{montant:,.0f} FCFA (caisse)".replace(',', ' ')
+                    ])
+                return True, f"Charge validée : -{montant:,.0f} FCFA sur la caisse".replace(',', ' ')
+            return True, 'Charge refusée'
+    return False, 'Charge introuvable'
+
+
+def _executer_validation_paiement_creance(boutique_id, paiement_id, action, traite_par, motif_refus):
+    paiements_sheet = get_sheet(boutique_id, 'creances_paiements')
+    creances_sheet = get_sheet(boutique_id, 'creances')
+    if not paiements_sheet:
+        return False, 'Paiement introuvable'
+    data = paiements_sheet.get_all_values()
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) > 0 and row[0] == paiement_id:
+            if len(row) > 6 and row[6] != 'EN_ATTENTE':
+                return False, 'Ce paiement a déjà été traité'
+            now = datetime.now()
+            nouveau_statut = 'VALIDEE' if action == 'valider' else 'REFUSEE'
+            paiements_sheet.update_cell(i + 1, 7, nouveau_statut)
+            paiements_sheet.update_cell(i + 1, 8, traite_par)
+            paiements_sheet.update_cell(i + 1, 9, now.strftime('%d/%m/%Y %H:%M:%S'))
+            if motif_refus:
+                paiements_sheet.update_cell(i + 1, 10, motif_refus)
+
+            if action != 'valider':
+                return True, 'Paiement refusé'
+
+            creance_id = row[1]
+            montant_paiement = to_float_sur(row[4])
+            if creances_sheet:
+                creances_data = creances_sheet.get_all_values()
+                for j in range(1, len(creances_data)):
+                    crow = creances_data[j]
+                    if len(crow) > 0 and crow[0] == creance_id:
+                        montant_total = to_float_sur(crow[5]) if len(crow) > 5 else 0
+                        montant_paye_actuel = to_float_sur(crow[6]) if len(crow) > 6 else 0
+                        nouveau_paye = montant_paye_actuel + montant_paiement
+                        nouveau_restant = max(montant_total - nouveau_paye, 0)
+                        creances_sheet.update_cell(j + 1, 7, nouveau_paye)
+                        creances_sheet.update_cell(j + 1, 8, nouveau_restant)
+                        creances_sheet.update_cell(j + 1, 9, 'SOLDEE' if nouveau_restant <= 0.01 else 'PARTIELLE')
+                        break
+            journal_sheet = get_sheet(boutique_id, 'journal')
+            if journal_sheet:
+                journal_sheet.append_row([
+                    now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+                    'PAIEMENT_CREANCE_VALIDE', creance_id, 1, 0, 0, traite_par,
+                    f"Encaissement créance : +{montant_paiement:,.0f} FCFA".replace(',', ' ')
+                ])
+            return True, f"Paiement validé : +{montant_paiement:,.0f} FCFA sur la caisse".replace(',', ' ')
+    return False, 'Paiement introuvable'
 
 
 def envoyer_notification_boutique_async(nom_boutique, email_gerant, telephone, adresse, proprietaire):
@@ -246,6 +395,26 @@ def corrections():
         return redirect(url_for('login_page'))
     return render_template('corrections.html')
 
+@app.route('/charges')
+def charges_page():
+    if 'boutique_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('charges.html', user_role=session.get('user_role', 'gerant'))
+
+@app.route('/creances')
+def creances_page():
+    if 'boutique_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('creances.html', user_role=session.get('user_role', 'gerant'))
+
+@app.route('/demandes')
+def demandes_page():
+    if 'boutique_id' not in session:
+        return redirect(url_for('login_page'))
+    if session.get('user_role') == 'vendeur':
+        return redirect(url_for('dashboard_vendeur'))
+    return render_template('demandes.html')
+
 @app.route('/deconnexion')
 def deconnexion():
     session.clear()
@@ -400,12 +569,20 @@ def api_valider_vente():
     prixVente = data.get('prixVente')
     remise = data.get('remise')
     total = data.get('total')
-    
+    client_nom = (data.get('clientNom') or '').strip()
+    client_telephone = (data.get('clientTelephone') or '').strip()
+    montant_paye = to_float_sur(data.get('montantPaye'), total)
+    montant_paye = max(0, min(montant_paye, total))
+    montant_du = total - montant_paye
+
+    if montant_du > 0.01 and not client_nom:
+        return jsonify({'success': False, 'error': 'Nom du client requis pour enregistrer une créance'})
+
     print(f"🔍 Vente unique de {produit_nom} x{quantite}")
-    
+
     try:
         stock_sheet = get_sheet(boutique_id, 'stock')
-        
+
         # VÉRIFICATION DU STOCK
         if stock_sheet:
             stock_data = stock_sheet.get_all_values()
@@ -414,16 +591,16 @@ def api_valider_vente():
                 if len(stock_data[i]) > 1 and stock_data[i][1] == produit_nom:
                     stock_actuel = int(stock_data[i][2]) if stock_data[i][2] else 0
                     break
-            
+
             if stock_actuel < quantite:
                 return jsonify({'success': False, 'error': f'Stock insuffisant ! Stock disponible: {stock_actuel}, Demandé: {quantite}'})
-        
+
         # Si stock suffisant, on continue
         ventes_sheet = get_sheet(boutique_id, 'ventes')
         journal_sheet = get_sheet(boutique_id, 'journal')
-        
+
         vente_id = f"VENTE_{int(datetime.now().timestamp())}_{produit_nom.replace(' ', '_')}"
-        
+
         # Récupérer le stock avant (à nouveau pour avoir la valeur)
         ancien_stock = 0
         if stock_sheet:
@@ -432,8 +609,21 @@ def api_valider_vente():
                 if len(stock_data[i]) > 1 and stock_data[i][1] == produit_nom:
                     ancien_stock = int(stock_data[i][2]) if stock_data[i][2] else 0
                     break
-        
-        # Enregistrer la vente
+
+        # Créance éventuelle (client n'a pas tout payé)
+        creance_id = ''
+        if montant_du > 0.01:
+            creances_sheet = get_or_create_sheet(boutique_id, 'creances', CREANCES_HEADERS)
+            creance_id = generer_id('CREANCE')
+            now = datetime.now()
+            creances_sheet.append_row([
+                creance_id, now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+                client_nom, client_telephone, total, montant_paye, montant_du,
+                'PARTIELLE' if montant_paye > 0 else 'OUVERTE',
+                session.get('user_nom', 'Gérant'), vente_id
+            ])
+
+        # Enregistrer la vente (colonnes J/K/L réservées à l'annulation, voir traiter_correction_vente)
         ventes_sheet.append_row([
             vente_id,
             datetime.now().strftime('%d/%m/%Y'),
@@ -443,7 +633,10 @@ def api_valider_vente():
             prixVente,
             remise,
             total,
-            session.get('user_nom', 'Gérant')
+            session.get('user_nom', 'Gérant'),
+            '', '', '',
+            montant_paye,
+            creance_id
         ])
         
         # Mettre à jour le stock
@@ -470,8 +663,11 @@ def api_valider_vente():
                 f"Total: {total} FCFA"
             ])
         
-        return jsonify({'success': True, 'message': f'Vente enregistrée ! Stock: {ancien_stock} → {nouveau_stock}'})
-        
+        message = f'Vente enregistrée ! Stock: {ancien_stock} → {nouveau_stock}'
+        if creance_id:
+            message += f' | Créance de {montant_du:,.0f} FCFA enregistrée pour {client_nom}'.replace(',', ' ')
+        return jsonify({'success': True, 'message': message})
+
     except Exception as e:
         print(f"❌ Erreur: {e}")
         return jsonify({'success': False, 'error': str(e)})
@@ -487,9 +683,18 @@ def api_valider_panier():
     panier = data.get('panier', [])
     remiseGlobale = data.get('remiseGlobale', 0)
     totalFinal = data.get('totalFinal', 0)
-    
+    client_nom = (data.get('clientNom') or '').strip()
+    client_telephone = (data.get('clientTelephone') or '').strip()
+    montant_paye_panier = to_float_sur(data.get('montantPaye'), totalFinal)
+    montant_paye_panier = max(0, min(montant_paye_panier, totalFinal))
+    montant_du_panier = totalFinal - montant_paye_panier
+    ratio_encaisse = (montant_paye_panier / totalFinal) if totalFinal > 0 else 1
+
+    if montant_du_panier > 0.01 and not client_nom:
+        return jsonify({'success': False, 'error': 'Nom du client requis pour enregistrer une créance'})
+
     print(f"📦 Validation panier - {len(panier)} articles")
-    
+
     try:
         stock_sheet = get_sheet(boutique_id, 'stock')
         
@@ -516,7 +721,20 @@ def api_valider_panier():
         
         total_brut = sum(item['total'] for item in panier)
         timestamp_base = int(datetime.now().timestamp())
-        
+
+        # Créance éventuelle (client n'a pas tout payé) - une ligne pour tout le panier
+        creance_id = ''
+        if montant_du_panier > 0.01:
+            creances_sheet = get_or_create_sheet(boutique_id, 'creances', CREANCES_HEADERS)
+            creance_id = generer_id('CREANCE')
+            now = datetime.now()
+            creances_sheet.append_row([
+                creance_id, now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+                client_nom, client_telephone, totalFinal, montant_paye_panier, montant_du_panier,
+                'PARTIELLE' if montant_paye_panier > 0 else 'OUVERTE',
+                session.get('user_nom', 'Gérant'), f"VENTE_{timestamp_base}"
+            ])
+
         for idx, item in enumerate(panier):
             vente_id = f"VENTE_{timestamp_base}_{idx}_{item['produit'].replace(' ', '_')}"
             
@@ -537,7 +755,8 @@ def api_valider_panier():
                         ancien_stock = int(stock_data[i][2]) if stock_data[i][2] else 0
                         break
             
-            # Enregistrer la vente
+            # Enregistrer la vente (colonnes J/K/L réservées à l'annulation, voir traiter_correction_vente)
+            montant_encaisse_article = round(total_article * ratio_encaisse)
             ventes_sheet.append_row([
                 vente_id,
                 datetime.now().strftime('%d/%m/%Y'),
@@ -547,7 +766,10 @@ def api_valider_panier():
                 item['prix'],
                 remise_article,
                 total_article,
-                session.get('user_nom', 'Gérant')
+                session.get('user_nom', 'Gérant'),
+                '', '', '',
+                montant_encaisse_article,
+                creance_id
             ])
             
             # Mettre à jour le stock
@@ -575,7 +797,10 @@ def api_valider_panier():
                 ])
         
         print(f"✅ Panier validé - Total: {totalFinal} FCFA")
-        return jsonify({'success': True, 'message': f'Panier validé ! Total: {totalFinal} FCFA'})
+        message = f'Panier validé ! Total: {totalFinal} FCFA'
+        if creance_id:
+            message += f' | Créance de {montant_du_panier:,.0f} FCFA enregistrée pour {client_nom}'.replace(',', ' ')
+        return jsonify({'success': True, 'message': message})
         
     except Exception as e:
         print(f"❌ Erreur: {e}")
@@ -688,14 +913,15 @@ def api_get_caisse_jour():
     data = sheet.get_all_values()
     ventes_jour = []
     total = 0
+    total_encaisse = 0
     nb_ventes = 0
     nb_produits = 0
     remises = 0
-    
+
     for i in range(1, len(data)):
         row = data[i]
         if len(row) > 1 and row[1] == aujourd_hui:
-            
+
             # ✅ VÉRIFICATION : Ignorer les ventes annulées (colonne J = index 9)
             est_annulee = False
             try:
@@ -703,28 +929,33 @@ def api_get_caisse_jour():
                     est_annulee = True
             except:
                 pass
-            
+
             if est_annulee:
                 continue  # ← On saute cette vente, elle ne sera pas comptée
-            
+
             try:
                 def to_float(val):
                     try:
                         return float(val) if val and str(val).replace('.', '').replace('-', '').isdigit() else 0
                     except:
                         return 0
-                
+
                 def to_int(val):
                     try:
                         return int(val) if val and str(val).isdigit() else 0
                     except:
                         return 0
-                
+
                 qte = to_int(row[4]) if len(row) > 4 else 0
                 prix_vendu = to_float(row[5]) if len(row) > 5 else 0
                 remise = to_float(row[6]) if len(row) > 6 else 0
                 total_net = to_float(row[7]) if len(row) > 7 else 0
-                
+                # Montant réellement encaissé (colonne M) : si vente à crédit
+                # partielle, sinon égal au total net (rétro-compatible avec
+                # les ventes enregistrées avant l'ajout des créances).
+                montant_encaisse = to_float(row[12]) if len(row) > 12 and row[12] not in ('', None) else total_net
+                creance_liee = str(row[13]) if len(row) > 13 else ''
+
                 ventes_jour.append({
                     'heure': str(row[2]) if len(row) > 2 else '',
                     'produit': str(row[3]) if len(row) > 3 else '',
@@ -732,23 +963,297 @@ def api_get_caisse_jour():
                     'prixVendu': prix_vendu,
                     'remise': remise,
                     'totalNet': total_net,
+                    'montantEncaisse': montant_encaisse,
+                    'creance': bool(creance_liee),
                     'vendeur': str(row[8]) if len(row) > 8 else ''
                 })
                 total += total_net
+                total_encaisse += montant_encaisse
                 nb_ventes += 1
                 nb_produits += qte
                 remises += remise
             except:
                 pass
-    
+
+    # Charges validées aujourd'hui : diminuent la caisse
+    charges_validees = 0
+    charges_sheet = get_sheet(session['boutique_id'], 'charges')
+    if charges_sheet:
+        for row in charges_sheet.get_all_values()[1:]:
+            if len(row) > 9 and row[7] == 'VALIDEE' and str(row[9]).startswith(aujourd_hui):
+                charges_validees += to_float_sur(row[4])
+
+    # Paiements de créances validés aujourd'hui : augmentent la caisse
+    paiements_creances = 0
+    paiements_sheet = get_sheet(session['boutique_id'], 'creances_paiements')
+    if paiements_sheet:
+        for row in paiements_sheet.get_all_values()[1:]:
+            if len(row) > 8 and row[6] == 'VALIDEE' and str(row[8]).startswith(aujourd_hui):
+                paiements_creances += to_float_sur(row[4])
+
+    caisse_nette = total_encaisse + paiements_creances - charges_validees
+
     return jsonify({
         'totalVentes': total,
+        'totalEncaisse': total_encaisse,
+        'chargesValidees': charges_validees,
+        'paiementsCreances': paiements_creances,
+        'caisseNette': caisse_nette,
         'nbVentes': nb_ventes,
         'nbProduitsVendus': nb_produits,
         'remiseTotale': remises,
         'date': aujourd_hui,
         'ventes': ventes_jour
     })
+
+@app.route('/api/demander_charge', methods=['POST'])
+def api_demander_charge():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'})
+
+    data = request.get_json()
+    boutique_id = session['boutique_id']
+    categorie = (data.get('categorie') or 'Autre').strip()
+    motif = (data.get('motif') or '').strip()
+    montant = to_float_sur(data.get('montant'))
+
+    if montant <= 0:
+        return jsonify({'success': False, 'error': 'Montant invalide'})
+
+    charges_sheet = get_or_create_sheet(boutique_id, 'charges', CHARGES_HEADERS)
+    charge_id = generer_id('CHARGE')
+    now = datetime.now()
+    demandeur = session.get('user_nom', 'Gérant')
+    charges_sheet.append_row([
+        charge_id, now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+        categorie, montant, motif, demandeur, 'EN_ATTENTE', '', '', ''
+    ])
+    resume = f"Charge « {categorie} » de {montant:,.0f} FCFA demandée par {demandeur}".replace(',', ' ')
+    _creer_demande(boutique_id, 'charge', charge_id, resume, demandeur)
+
+    return jsonify({'success': True, 'message': 'Charge enregistrée, en attente de validation du gérant'})
+
+
+@app.route('/api/get_charges')
+def api_get_charges():
+    if 'boutique_id' not in session:
+        return jsonify([])
+
+    boutique_id = session['boutique_id']
+    statut_filtre = request.args.get('statut')
+    sheet = get_sheet(boutique_id, 'charges')
+    if not sheet:
+        return jsonify([])
+
+    data = sheet.get_all_values()
+    charges = []
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) < 8:
+            continue
+        statut = row[7]
+        if statut_filtre and statut != statut_filtre:
+            continue
+        charges.append({
+            'id': row[0], 'date': row[1], 'heure': row[2], 'categorie': row[3],
+            'montant': to_float_sur(row[4]), 'motif': row[5], 'demandeur': row[6],
+            'statut': statut,
+            'validePar': row[8] if len(row) > 8 else '',
+            'dateValidation': row[9] if len(row) > 9 else '',
+            'motifRefus': row[10] if len(row) > 10 else ''
+        })
+    return jsonify(charges[::-1])
+
+
+@app.route('/api/get_creances')
+def api_get_creances():
+    if 'boutique_id' not in session:
+        return jsonify([])
+
+    boutique_id = session['boutique_id']
+    statut_filtre = request.args.get('statut')  # 'OUVERTES' = restant > 0
+    sheet = get_sheet(boutique_id, 'creances')
+    if not sheet:
+        return jsonify([])
+
+    data = sheet.get_all_values()
+    creances = []
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) < 9:
+            continue
+        statut = row[8]
+        if statut_filtre == 'OUVERTES' and statut == 'SOLDEE':
+            continue
+        creances.append({
+            'id': row[0], 'date': row[1], 'heure': row[2],
+            'clientNom': row[3], 'clientTelephone': row[4],
+            'montantTotal': to_float_sur(row[5]),
+            'montantPaye': to_float_sur(row[6]),
+            'montantRestant': to_float_sur(row[7]),
+            'statut': statut,
+            'vendeur': row[9] if len(row) > 9 else ''
+        })
+    return jsonify(creances[::-1])
+
+
+@app.route('/api/enregistrer_paiement_creance', methods=['POST'])
+def api_enregistrer_paiement_creance():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'})
+
+    data = request.get_json()
+    boutique_id = session['boutique_id']
+    creance_id = data.get('creanceId')
+    montant = to_float_sur(data.get('montant'))
+
+    if montant <= 0:
+        return jsonify({'success': False, 'error': 'Montant invalide'})
+
+    creances_sheet = get_sheet(boutique_id, 'creances')
+    if not creances_sheet:
+        return jsonify({'success': False, 'error': 'Créance introuvable'})
+
+    creances_data = creances_sheet.get_all_values()
+    creance = None
+    for row in creances_data[1:]:
+        if len(row) > 0 and row[0] == creance_id:
+            creance = row
+            break
+    if not creance:
+        return jsonify({'success': False, 'error': 'Créance introuvable'})
+
+    montant_restant = to_float_sur(creance[7]) if len(creance) > 7 else 0
+    if montant > montant_restant + 0.01:
+        return jsonify({'success': False, 'error': f'Le montant dépasse le restant dû ({montant_restant:,.0f} FCFA)'.replace(',', ' ')})
+
+    paiements_sheet = get_or_create_sheet(boutique_id, 'creances_paiements', CREANCES_PAIEMENTS_HEADERS)
+    paiement_id = generer_id('PAYCR')
+    now = datetime.now()
+    demandeur = session.get('user_nom', 'Gérant')
+    paiements_sheet.append_row([
+        paiement_id, creance_id, now.strftime('%d/%m/%Y'), now.strftime('%H:%M:%S'),
+        montant, demandeur, 'EN_ATTENTE', '', '', ''
+    ])
+    resume = f"Paiement créance de {creance[3]} : {montant:,.0f} FCFA enregistré par {demandeur}".replace(',', ' ')
+    _creer_demande(boutique_id, 'paiement_creance', paiement_id, resume, demandeur)
+
+    return jsonify({'success': True, 'message': 'Paiement enregistré, en attente de validation du gérant'})
+
+
+@app.route('/api/get_demandes')
+def api_get_demandes():
+    if 'boutique_id' not in session:
+        return jsonify([])
+
+    boutique_id = session['boutique_id']
+    statut_filtre = request.args.get('statut', 'EN_ATTENTE')
+    demandeur_filtre = None if est_gerant() else session.get('user_nom')
+    sheet = get_sheet(boutique_id, 'demandes')
+    if not sheet:
+        return jsonify([])
+
+    data = sheet.get_all_values()
+    demandes = []
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) < 8:
+            continue
+        if statut_filtre != 'TOUTES' and row[7] != statut_filtre:
+            continue
+        if demandeur_filtre and row[6] != demandeur_filtre:
+            continue
+        demandes.append({
+            'id': row[0], 'date': row[1], 'heure': row[2], 'type': row[3],
+            'referenceId': row[4], 'resume': row[5], 'demandeur': row[6],
+            'statut': row[7],
+            'traitePar': row[8] if len(row) > 8 else '',
+            'dateTraitement': row[9] if len(row) > 9 else '',
+            'motifRefus': row[10] if len(row) > 10 else ''
+        })
+    return jsonify(demandes[::-1])
+
+
+@app.route('/api/get_demandes_count')
+def api_get_demandes_count():
+    if not est_gerant():
+        return jsonify({'count': 0})
+
+    sheet = get_sheet(session['boutique_id'], 'demandes')
+    if not sheet:
+        return jsonify({'count': 0})
+
+    data = sheet.get_all_values()
+    count = sum(1 for i in range(1, len(data)) if len(data[i]) > 7 and data[i][7] == 'EN_ATTENTE')
+    return jsonify({'count': count})
+
+
+@app.route('/api/traiter_demande', methods=['POST'])
+def api_traiter_demande():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'})
+    if not est_gerant():
+        return jsonify({'success': False, 'error': 'Réservé au gérant'})
+
+    data = request.get_json()
+    boutique_id = session['boutique_id']
+    demande_id = data.get('id')
+    type_in = data.get('type')
+    reference_id_in = data.get('referenceId')
+    action = data.get('action')  # 'valider' | 'refuser'
+    motif_refus = (data.get('motifRefus') or '').strip()
+    traite_par = session.get('user_nom', 'Gérant')
+
+    if action not in ('valider', 'refuser'):
+        return jsonify({'success': False, 'error': 'Action inconnue'})
+
+    sheet = get_sheet(boutique_id, 'demandes')
+    if not sheet:
+        return jsonify({'success': False, 'error': 'Demande introuvable'})
+
+    # Identification soit par l'id de la demande (page "Demandes"), soit par
+    # son type + la référence de l'objet concerné (validation directe depuis
+    # la page Charges ou Créances, sans connaître l'id de la demande).
+    rows = sheet.get_all_values()
+    ligne, idx = None, None
+    for i in range(1, len(rows)):
+        row = rows[i]
+        if len(row) < 8:
+            continue
+        if demande_id and row[0] == demande_id:
+            ligne, idx = row, i
+            break
+        if not demande_id and type_in and row[3] == type_in and str(row[4]) == str(reference_id_in) and row[7] == 'EN_ATTENTE':
+            ligne, idx = row, i
+            break
+    if not ligne:
+        return jsonify({'success': False, 'error': 'Demande introuvable'})
+    if len(ligne) > 7 and ligne[7] != 'EN_ATTENTE':
+        return jsonify({'success': False, 'error': 'Cette demande a déjà été traitée'})
+
+    type_demande = ligne[3]
+    reference_id = ligne[4]
+
+    if type_demande == 'charge':
+        ok, message = _executer_validation_charge(boutique_id, reference_id, action, traite_par, motif_refus)
+    elif type_demande == 'paiement_creance':
+        ok, message = _executer_validation_paiement_creance(boutique_id, reference_id, action, traite_par, motif_refus)
+    else:
+        return jsonify({'success': False, 'error': f'Type de demande inconnu: {type_demande}'})
+
+    if not ok:
+        return jsonify({'success': False, 'error': message})
+
+    nouveau_statut = 'VALIDEE' if action == 'valider' else 'REFUSEE'
+    now = datetime.now()
+    sheet.update_cell(idx + 1, 8, nouveau_statut)
+    sheet.update_cell(idx + 1, 9, traite_par)
+    sheet.update_cell(idx + 1, 10, now.strftime('%d/%m/%Y %H:%M:%S'))
+    if motif_refus:
+        sheet.update_cell(idx + 1, 11, motif_refus)
+
+    return jsonify({'success': True, 'message': message})
+
 
 @app.route('/api/get_vendeurs')
 def api_get_vendeurs():
@@ -1119,14 +1624,23 @@ def api_get_dashboard_stats():
                 except:
                     pass
     
+    # Demandes en attente (charges / paiements de créance) - gérant uniquement
+    demandes_en_attente = 0
+    if est_gerant():
+        demandes_sheet = get_sheet(boutique_id, 'demandes')
+        if demandes_sheet:
+            demandes_data = demandes_sheet.get_all_values()
+            demandes_en_attente = sum(1 for i in range(1, len(demandes_data)) if len(demandes_data[i]) > 7 and demandes_data[i][7] == 'EN_ATTENTE')
+
     print(f"DEBUG - CA Jour: {ca_jour}, CA Mois: {ca_mois}, Produits: {nb_produits}, Alertes: {alertes}")
-    
+
     return jsonify({
         'ca_jour': ca_jour,
         'ca_mois': ca_mois,
         'nb_produits': nb_produits,
         'alertes': alertes,
-        'produits_critiques': produits_critiques
+        'produits_critiques': produits_critiques,
+        'demandes_en_attente': demandes_en_attente
     })
 @app.route('/api/test_dashboard')
 def test_dashboard():
@@ -1331,6 +1845,125 @@ def api_connexion_vendeur():
     
     print("❌ Vendeur non trouvé")
     return jsonify({'success': False, 'error': 'Identifiants incorrects'})
+
+
+# ========== CONNEXION PAR BIOMÉTRIE (Face ID / Windows Hello / empreinte) ==========
+# Auto-enregistrement uniquement : un compte (gérant ou vendeur) ne peut
+# enregistrer que SON PROPRE appareil, une fois déjà connecté par mot de
+# passe. Ensuite, cet appareil permet de se reconnecter sans mot de passe.
+
+@app.route('/api/webauthn/inscription/options', methods=['POST'])
+def api_webauthn_inscription_options():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'}), 401
+
+    type_compte = 'vendeur' if session.get('user_role') == 'vendeur' else 'gerant'
+    options_json, challenge = webauthn_service.options_inscription(
+        request, spreadsheet, session['boutique_id'], type_compte,
+        session.get('vendeur_id'), session.get('user_nom') or session.get('boutique_nom'),
+    )
+    session['webauthn_challenge'] = challenge
+    return jsonify({'success': True, 'options': json.loads(options_json)})
+
+
+@app.route('/api/webauthn/inscription/verifier', methods=['POST'])
+def api_webauthn_inscription_verifier():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'}), 401
+
+    data = request.get_json() or {}
+    challenge = session.pop('webauthn_challenge', None)
+    if not challenge:
+        return jsonify({'success': False, 'error': 'Session expirée, recommencez.'}), 400
+
+    type_compte = 'vendeur' if session.get('user_role') == 'vendeur' else 'gerant'
+    try:
+        webauthn_service.verifier_inscription(
+            request, spreadsheet, session['boutique_id'], type_compte,
+            session.get('vendeur_id'), session.get('user_nom') or session.get('boutique_nom'),
+            data.get('credential'), challenge,
+            libelle_appareil=data.get('libelle_appareil'),
+        )
+        return jsonify({'success': True})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f"Échec de l'enregistrement : {e}"}), 400
+
+
+@app.route('/api/webauthn/mes-appareils')
+def api_webauthn_mes_appareils():
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'data': []}), 401
+
+    type_compte = 'vendeur' if session.get('user_role') == 'vendeur' else 'gerant'
+    appareils = webauthn_service.lister_appareils(spreadsheet, session['boutique_id'], type_compte, session.get('vendeur_id'))
+    return jsonify({'success': True, 'data': appareils})
+
+
+@app.route('/api/webauthn/appareils/<int:ligne>', methods=['DELETE'])
+def api_webauthn_revoquer(ligne):
+    if 'boutique_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'}), 401
+
+    type_compte = 'vendeur' if session.get('user_role') == 'vendeur' else 'gerant'
+    ok = webauthn_service.revoquer_appareil(spreadsheet, ligne, session['boutique_id'], type_compte, session.get('vendeur_id'))
+    if not ok:
+        return jsonify({'success': False, 'error': 'Introuvable'}), 404
+    return jsonify({'success': True})
+
+
+@app.route('/login/webauthn/options', methods=['POST'])
+def login_webauthn_options():
+    """Public — page de connexion, personne n'est encore authentifié."""
+    options_json, challenge = webauthn_service.options_connexion(request)
+    session['webauthn_login_challenge'] = challenge
+    return jsonify({'success': True, 'options': json.loads(options_json)})
+
+
+@app.route('/login/webauthn/verifier', methods=['POST'])
+def login_webauthn_verifier():
+    """Public. Identifie le compte à partir de la clé biométrique elle-même,
+    puis pose la session exactement comme pour la connexion par mot de passe."""
+    data = request.get_json() or {}
+    challenge = session.pop('webauthn_login_challenge', None)
+    if not challenge:
+        return jsonify({'success': False, 'error': 'Session expirée, recommencez.'}), 400
+
+    try:
+        identifiant = webauthn_service.verifier_connexion(request, spreadsheet, data.get('credential'), challenge)
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 401
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Échec de la connexion : {e}'}), 400
+
+    boutique_id = int(identifiant['boutique_id'])
+
+    if identifiant['type_compte'] == 'vendeur':
+        vendeur_id = identifiant['vendeur_id']
+        sheet = get_sheet(boutique_id, 'vendeurs')
+        vendeur_row = None
+        if sheet:
+            for row in sheet.get_all_values()[1:]:
+                if len(row) > 0 and row[0] == vendeur_id:
+                    vendeur_row = row
+                    break
+        if not vendeur_row or (len(vendeur_row) > 4 and vendeur_row[4] != 'oui'):
+            return jsonify({'success': False, 'error': 'Compte vendeur introuvable ou désactivé'}), 401
+        session['boutique_id'] = boutique_id
+        session['user_role'] = 'vendeur'
+        session['user_nom'] = vendeur_row[3] if len(vendeur_row) > 3 else identifiant['utilisateur_nom']
+        session['vendeur_id'] = vendeur_row[0]
+        return jsonify({'success': True, 'redirect': url_for('dashboard_vendeur')})
+
+    boutique = get_boutique_by_id(boutique_id)
+    if not boutique or boutique['actif'] != 'oui':
+        return jsonify({'success': False, 'error': 'Boutique introuvable ou en attente de validation'}), 401
+    session['boutique_id'] = boutique['id']
+    session['boutique_nom'] = boutique['nom_boutique']
+    session['email'] = boutique['email']
+    return jsonify({'success': True, 'redirect': url_for('dashboard_boutique')})
+
 
 # ========== ADMIN GLOBAL (RESERVE AU CONCEPTEUR) ==========
 

@@ -363,6 +363,22 @@
     .menu-messages { border-color: rgba(168,85,247,0.3); color: #d8b4fe; }
     .menu-messages:hover { background: rgba(168,85,247,0.2); border-color: #a855f7; color: #a855f7; }
 
+    .menu-charges { border-color: rgba(220,38,38,0.3); color: #fca5a5; }
+    .menu-charges:hover { background: rgba(220,38,38,0.2); border-color: #dc2626; color: #dc2626; }
+
+    .menu-creances { border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+    .menu-creances:hover { background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #f59e0b; }
+
+    .menu-demandes { border-color: rgba(45,212,191,0.3); color: #5eead4; position: relative; }
+    .menu-demandes:hover { background: rgba(45,212,191,0.2); border-color: #2dd4bf; color: #2dd4bf; }
+    .menu-badge {
+      position: absolute; top: -8px; right: -8px;
+      background: var(--danger); color: white;
+      font-size: 10px; font-weight: 700; min-width: 18px; height: 18px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      padding: 0 4px; box-shadow: 0 0 0 2px var(--navy);
+    }
+
     .row {
       display: grid;
       grid-template-columns: 1.7fr 1fr;
@@ -545,7 +561,26 @@
         <a href="/corrections" class="menu-item menu-corrections">Corrections</a>
         <a href="/ventes_annulees" class="menu-item menu-annulees">Ventes annulées</a>
         <a href="/messages_gerant" class="menu-item menu-messages">Messages</a>
+        <a href="/charges" class="menu-item menu-charges">Charges</a>
+        <a href="/creances" class="menu-item menu-creances">Créances</a>
+        <a href="/demandes" class="menu-item menu-demandes">Demandes<span class="menu-badge" id="demandesBadge" hidden>0</span></a>
       </div>
+    </div>
+
+    <!-- Sécurité de connexion (Face ID / Windows Hello) -->
+    <div class="menu-section">
+      <div class="section-header">
+        <span class="section-title">Sécurité de connexion</span>
+        <div class="section-line"></div>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+        Connectez-vous sans mot de passe sur cet appareil avec Face ID, Windows Hello ou votre empreinte.
+      </p>
+      <div id="listeAppareils" style="margin-bottom:14px;"></div>
+      <button onclick="inscrireAppareil()" class="btn-deco" style="border-color:var(--accent); color:var(--accent);" id="btnAjouterAppareil">
+        + Activer sur cet appareil
+      </button>
+      <div id="securiteMessage" style="font-size:12px; margin-top:10px;"></div>
     </div>
 
     <!-- Graphique + Alertes -->
@@ -696,8 +731,95 @@
       });
     }
 
+    function chargerDemandesBadge() {
+      fetch('/api/get_demandes_count').then(r => r.json()).then(d => {
+        const badge = document.getElementById('demandesBadge');
+        if (d.count > 0) {
+          badge.textContent = d.count;
+          badge.hidden = false;
+        } else {
+          badge.hidden = true;
+        }
+      }).catch(() => {});
+    }
+
     chargerDashboard();
+    chargerDemandesBadge();
     setInterval(chargerDashboard, 60000);
+    setInterval(chargerDemandesBadge, 30000);
+  </script>
+
+  <!-- Connexion par biométrie (Face ID / Windows Hello / empreinte) -->
+  <script src="https://cdn.jsdelivr.net/npm/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
+  <script>
+    function chargerAppareils() {
+      fetch('/api/webauthn/mes-appareils').then(r => r.json()).then(d => {
+        const zone = document.getElementById('listeAppareils');
+        if (!d.success || !d.data.length) {
+          zone.innerHTML = '<div class="empty-state" style="padding:12px 0;">Aucun appareil enregistré pour l\'instant.</div>';
+          return;
+        }
+        zone.innerHTML = d.data.map(a => `
+          <div class="alerte-item">
+            <div>
+              <div class="alerte-nom">📱 ${escapeHtml(a.libelle_appareil || 'Appareil')}</div>
+              <div class="alerte-sous">Ajouté le ${a.date_creation || '-'} ${a.derniere_utilisation ? '· Utilisé le ' + a.derniere_utilisation : '· Jamais utilisé'}</div>
+            </div>
+            <span class="alerte-badge badge-rupture" style="cursor:pointer;" onclick="revoquerAppareil(${a.ligne})">Retirer</span>
+          </div>`).join('');
+      }).catch(() => {});
+    }
+
+    function revoquerAppareil(ligne) {
+      if (!confirm('Retirer cet appareil ? Il ne pourra plus servir à se connecter.')) return;
+      fetch('/api/webauthn/appareils/' + ligne, { method: 'DELETE' }).then(r => r.json()).then(d => {
+        if (d.success) chargerAppareils();
+        else alert('Erreur : ' + (d.error || 'inconnue'));
+      });
+    }
+
+    async function inscrireAppareil() {
+      const msg = document.getElementById('securiteMessage');
+      if (!window.SimpleWebAuthnBrowser || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+        msg.style.color = 'var(--danger)';
+        msg.textContent = "Non disponible sur cet appareil/navigateur (nécessite http://localhost ou HTTPS, et un capteur biométrique).";
+        return;
+      }
+      msg.style.color = 'var(--text-muted)';
+      msg.textContent = 'Suivez les instructions de votre appareil (Face ID, Windows Hello, empreinte...)...';
+      try {
+        const rOpt = await fetch('/api/webauthn/inscription/options', { method: 'POST' });
+        const dOpt = await rOpt.json();
+        if (!dOpt.success) { msg.style.color = 'var(--danger)'; msg.textContent = dOpt.error; return; }
+
+        const credential = await SimpleWebAuthnBrowser.startRegistration(dOpt.options);
+        const libelle = prompt('Nom de cet appareil (ex: "Mon téléphone", "PC boutique") :', navigator.platform || 'Mon appareil');
+
+        const rVer = await fetch('/api/webauthn/inscription/verifier', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential, libelle_appareil: libelle }),
+        });
+        const dVer = await rVer.json();
+        if (dVer.success) {
+          msg.style.color = 'var(--success)';
+          msg.textContent = 'Appareil ajouté !';
+          chargerAppareils();
+        } else {
+          msg.style.color = 'var(--danger)';
+          msg.textContent = dVer.error;
+        }
+      } catch (err) {
+        msg.style.color = 'var(--danger)';
+        msg.textContent = (err.name === 'InvalidStateError')
+          ? 'Cet appareil est déjà enregistré pour ce compte.'
+          : ('Échec : ' + (err.message || err));
+      }
+    }
+
+    if (!window.SimpleWebAuthnBrowser) {
+      document.getElementById('btnAjouterAppareil').disabled = true;
+    }
+    chargerAppareils();
   </script>
 </body>
 </html>

@@ -1,0 +1,219 @@
+<div class="card">
+    <h2>🧾 Créances clients - {{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}</h2>
+    <div id="creanceMessage"></div>
+
+    <div class="stats">
+        <div class="stat-card"><h3 id="nbCreancesOuvertes">0</h3><p>Créances ouvertes</p></div>
+        <div class="stat-card"><h3 id="totalRestantDu">0</h3><p>Restant dû (FCFA)</p></div>
+        <div class="stat-card"><h3 id="nbPaiementsAttente">0</h3><p>Paiements en attente</p></div>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <label style="font-size:13px; color:#666;"><input type="checkbox" id="filtreOuvertes" checked onchange="chargerCreances()"> Afficher uniquement les créances non soldées</label>
+    </div>
+
+    <h3>📋 Liste des créances</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th><th>Client</th><th>Téléphone</th><th>Total</th><th>Payé</th><th>Restant</th><th>Statut</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="creancesBody">
+                <tr><td colspan="8">Chargement...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 style="margin-top:30px;">⏳ Paiements de créance en attente de validation</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Détail</th><th>Enregistré par</th><th>Action</th></tr>
+            </thead>
+            <tbody id="paiementsAttenteBody">
+                <tr><td colspan="4">Chargement...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{% if user_role == 'vendeur' %}/dashboard_vendeur{% else %}/dashboard_boutique{% endif %}" style="background:#6c757d; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; display:inline-block;">
+            ← Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<style>
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 10px; }
+    .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 15px; border-radius: 15px; text-align: center; }
+    .stat-card h3 { font-size: 26px; margin-bottom: 5px; }
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 350px; overflow-y: auto; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1e3a8a; color: white; padding: 12px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .card { max-width: 1100px; margin: 20px auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h2 { color: #1e3a8a; margin-bottom: 20px; text-align: center; }
+    h3 { color: #1e3a8a; }
+    .badge { padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .badge-ouverte { background: #f8d7da; color: #721c24; }
+    .badge-partielle { background: #fff3cd; color: #856404; }
+    .badge-soldee { background: #d4edda; color: #155724; }
+    .btn-action { border: none; border-radius: 5px; padding: 6px 10px; cursor: pointer; color: white; font-size: 12px; margin-right: 4px; }
+    .btn-valider { background: #28a745; }
+    .btn-refuser { background: #dc3545; }
+    .btn-payer { background: #17a2b8; }
+</style>
+
+<script>
+    const userRole = "{{ user_role }}";
+    let creancesCache = [];
+
+    function statutBadge(statut) {
+        if (statut === 'SOLDEE') return '<span class="badge badge-soldee">✅ Soldée</span>';
+        if (statut === 'PARTIELLE') return '<span class="badge badge-partielle">🟡 Partielle</span>';
+        return '<span class="badge badge-ouverte">🔴 Ouverte</span>';
+    }
+
+    function enregistrerPaiement(creanceId, restant) {
+        var montant = parseFloat(prompt('Montant payé par le client (FCFA) - restant dû : ' + restant.toLocaleString() + ' FCFA', restant));
+        if (!montant || montant <= 0) return;
+        if (montant > restant) {
+            alert('Le montant ne peut pas dépasser le restant dû (' + restant.toLocaleString() + ' FCFA)');
+            return;
+        }
+        fetch('/api/enregistrer_paiement_creance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ creanceId: creanceId, montant: montant })
+        })
+        .then(response => response.json())
+        .then(data => {
+            var msgDiv = document.getElementById('creanceMessage');
+            if (data.success) {
+                msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">✅ ' + data.message + '</div>';
+                chargerCreances();
+                chargerPaiementsAttente();
+            } else {
+                msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">❌ ' + data.error + '</div>';
+            }
+        });
+    }
+
+    function chargerCreances() {
+        var ouvertesSeulement = document.getElementById('filtreOuvertes').checked;
+        var url = '/api/get_creances' + (ouvertesSeulement ? '?statut=OUVERTES' : '');
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                creancesCache = data;
+                var tbody = document.getElementById('creancesBody');
+                tbody.innerHTML = '';
+                var nbOuvertes = 0, totalRestant = 0;
+                data.forEach(function(c) {
+                    if (c.statut !== 'SOLDEE') { nbOuvertes++; totalRestant += c.montantRestant; }
+                });
+                document.getElementById('nbCreancesOuvertes').textContent = nbOuvertes;
+                document.getElementById('totalRestantDu').textContent = totalRestant.toLocaleString();
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8">Aucune créance</td></tr>';
+                    return;
+                }
+                data.forEach(function(c) {
+                    var row = tbody.insertRow();
+                    row.insertCell(0).textContent = c.date + ' ' + c.heure;
+                    row.insertCell(1).innerHTML = '<strong>' + (c.clientNom || '-') + '</strong>';
+                    row.insertCell(2).textContent = c.clientTelephone || '-';
+                    row.insertCell(3).textContent = c.montantTotal.toLocaleString() + ' FCFA';
+                    row.insertCell(4).textContent = c.montantPaye.toLocaleString() + ' FCFA';
+                    row.insertCell(5).innerHTML = '<strong>' + c.montantRestant.toLocaleString() + ' FCFA</strong>';
+                    row.insertCell(6).innerHTML = statutBadge(c.statut);
+
+                    var actionCell = row.insertCell(7);
+                    if (c.statut !== 'SOLDEE') {
+                        var btn = document.createElement('button');
+                        btn.className = 'btn-action btn-payer';
+                        btn.textContent = '💰 Enregistrer paiement';
+                        btn.onclick = function() { enregistrerPaiement(c.id, c.montantRestant); };
+                        actionCell.appendChild(btn);
+                    } else {
+                        actionCell.textContent = '-';
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('creancesBody').innerHTML = '<tr><td colspan="8">Erreur de chargement</td></tr>';
+            });
+    }
+
+    function traiterPaiement(id, action) {
+        var motifRefus = '';
+        if (action === 'refuser') {
+            motifRefus = prompt('Motif du refus (optionnel) :', '') || '';
+        } else if (!confirm('Valider ce paiement ? Le montant sera ajouté à la caisse.')) {
+            return;
+        }
+        fetch('/api/traiter_demande', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'paiement_creance', referenceId: id, action: action, motifRefus: motifRefus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                chargerPaiementsAttente();
+                chargerCreances();
+            } else {
+                alert('Erreur : ' + data.error);
+            }
+        });
+    }
+
+    function chargerPaiementsAttente() {
+        fetch('/api/get_demandes?statut=EN_ATTENTE')
+            .then(response => response.json())
+            .then(data => {
+                var paiements = (data || []).filter(d => d.type === 'paiement_creance');
+                document.getElementById('nbPaiementsAttente').textContent = paiements.length;
+                var tbody = document.getElementById('paiementsAttenteBody');
+                tbody.innerHTML = '';
+                if (paiements.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">Aucun paiement en attente</td></tr>';
+                    return;
+                }
+                paiements.forEach(function(p) {
+                    var row = tbody.insertRow();
+                    row.insertCell(0).textContent = p.date + ' ' + p.heure;
+                    row.insertCell(1).textContent = p.resume;
+                    row.insertCell(2).textContent = p.demandeur;
+                    var actionCell = row.insertCell(3);
+                    if (userRole !== 'vendeur') {
+                        var btnV = document.createElement('button');
+                        btnV.className = 'btn-action btn-valider';
+                        btnV.textContent = '✅ Valider';
+                        btnV.onclick = function() { traiterPaiement(p.referenceId, 'valider'); };
+                        var btnR = document.createElement('button');
+                        btnR.className = 'btn-action btn-refuser';
+                        btnR.textContent = '❌ Refuser';
+                        btnR.onclick = function() { traiterPaiement(p.referenceId, 'refuser'); };
+                        actionCell.appendChild(btnV);
+                        actionCell.appendChild(btnR);
+                    } else {
+                        actionCell.textContent = 'En attente du gérant';
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('paiementsAttenteBody').innerHTML = '<tr><td colspan="4">Erreur de chargement</td></tr>';
+            });
+    }
+
+    chargerCreances();
+    chargerPaiementsAttente();
+    setInterval(function() { chargerCreances(); chargerPaiementsAttente(); }, 30000);
+</script>
