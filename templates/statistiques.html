@@ -34,13 +34,32 @@
         </div>
     </div>
     
-    <!-- Cartes KPI -->
+    <!-- Cartes KPI financières -->
     <div class="stats">
         <div class="stat-card">
             <div class="stat-icon"></div>
             <h3 id="statChiffreAffaire">0</h3>
             <p>Chiffre d'affaires</p>
         </div>
+        <div class="stat-card stat-card-encaisse">
+            <div class="stat-icon"></div>
+            <h3 id="statEncaisse">0</h3>
+            <p>Encaissé (ventes + créances payées)</p>
+        </div>
+        <div class="stat-card stat-card-charges">
+            <div class="stat-icon"></div>
+            <h3 id="statCharges">0</h3>
+            <p>Charges validées</p>
+        </div>
+        <div class="stat-card stat-card-nette">
+            <div class="stat-icon"></div>
+            <h3 id="statCaisseNette">0</h3>
+            <p>Caisse nette</p>
+        </div>
+    </div>
+
+    <!-- Cartes KPI d'activité -->
+    <div class="stats">
         <div class="stat-card">
             <div class="stat-icon"></div>
             <h3 id="statNbVentes">0</h3>
@@ -103,6 +122,15 @@
     }
     .stat-card:hover {
         transform: translateY(-5px);
+    }
+    .stat-card-encaisse {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+    .stat-card-charges {
+        background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    }
+    .stat-card-nette {
+        background: linear-gradient(135deg, #92400e 0%, #d97706 100%);
     }
     .stat-icon {
         font-size: 32px;
@@ -222,6 +250,9 @@
                 document.getElementById('statMessage').innerHTML = '';
                 
                 document.getElementById('statChiffreAffaire').innerHTML = (data.chiffreAffaire || 0).toLocaleString('fr-FR') + ' FCFA';
+                document.getElementById('statEncaisse').innerHTML = (data.encaisse || 0).toLocaleString('fr-FR') + ' FCFA';
+                document.getElementById('statCharges').innerHTML = (data.charges || 0).toLocaleString('fr-FR') + ' FCFA';
+                document.getElementById('statCaisseNette').innerHTML = (data.caisseNette || 0).toLocaleString('fr-FR') + ' FCFA';
                 document.getElementById('statNbVentes').innerHTML = (data.nbVentes || 0).toLocaleString('fr-FR');
                 document.getElementById('statNbProduits').innerHTML = (data.nbProduitsVendus || 0).toLocaleString('fr-FR');
                 document.getElementById('statTicketMoyen').innerHTML = Math.round(data.ticketMoyen || 0).toLocaleString('fr-FR') + ' FCFA';

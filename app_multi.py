@@ -1386,17 +1386,23 @@ def api_get_approvisionnements():
 
 @app.route('/api/get_statistiques')
 def api_get_statistiques():
+    STATS_VIDES = {
+        'chiffreAffaire': 0, 'encaisse': 0, 'charges': 0, 'caisseNette': 0,
+        'nbVentes': 0, 'nbProduitsVendus': 0, 'ticketMoyen': 0,
+        'topProduits': [], 'topVendeurs': []
+    }
     if 'boutique_id' not in session:
-        return jsonify({'chiffreAffaire': 0, 'nbVentes': 0, 'nbProduitsVendus': 0, 'ticketMoyen': 0, 'topProduits': [], 'topVendeurs': []})
-    
+        return jsonify(STATS_VIDES)
+
+    boutique_id = session['boutique_id']
     periode = request.args.get('periode', 'jour')
     date_debut = request.args.get('date_debut', '')
     date_fin = request.args.get('date_fin', '')
-    
-    sheet = get_sheet(session['boutique_id'], 'ventes')
+
+    sheet = get_sheet(boutique_id, 'ventes')
     if not sheet:
-        return jsonify({'chiffreAffaire': 0, 'nbVentes': 0, 'nbProduitsVendus': 0, 'ticketMoyen': 0, 'topProduits': [], 'topVendeurs': []})
-    
+        return jsonify(STATS_VIDES)
+
     data = sheet.get_all_values()
     
     # Obtenir les dates aujourd'hui
@@ -1465,10 +1471,15 @@ def api_get_statistiques():
                 if est_dans_periode(date_vente):
                     # Déterminer la colonne du total (colonne H = index 7)
                     total = float(row[7]) if len(row) > 7 and row[7] else 0
+                    # Montant réellement encaissé (colonne M) : si vente à
+                    # crédit partielle, sinon égal au total (rétro-compatible
+                    # avec les ventes enregistrées avant l'ajout des créances).
+                    montant_encaisse = to_float_sur(row[12]) if len(row) > 12 and row[12] not in ('', None) else total
                     ventes.append({
                         'produit': row[3] if len(row) > 3 else '',
                         'quantite': int(float(row[4])) if len(row) > 4 and row[4] else 0,
                         'total': total,
+                        'montantEncaisse': montant_encaisse,
                         'vendeur': row[8] if len(row) > 8 else ''
                     })
             except Exception as e:
@@ -1479,6 +1490,34 @@ def api_get_statistiques():
     nbVentes = len(ventes)
     nbProduitsVendus = sum(v['quantite'] for v in ventes)
     ticketMoyen = chiffreAffaire / nbVentes if nbVentes > 0 else 0
+
+    # Encaissé sur les ventes (hors part encore due sur les créances)
+    encaisse_ventes = sum(v['montantEncaisse'] for v in ventes)
+
+    # Paiements de créances validés sur la période : ce cash arrive à la
+    # date de VALIDATION, pas à la date de la vente d'origine.
+    paiements_creances = 0
+    paiements_sheet = get_sheet(boutique_id, 'creances_paiements')
+    if paiements_sheet:
+        for row in paiements_sheet.get_all_values()[1:]:
+            if len(row) > 8 and row[6] == 'VALIDEE':
+                date_validation = str(row[8]).split(' ')[0]
+                if est_dans_periode(date_validation):
+                    paiements_creances += to_float_sur(row[4])
+
+    # Charges validées sur la période : déduites de la caisse à la date de
+    # VALIDATION (voir /api/get_caisse_jour pour la même logique au jour).
+    charges_validees = 0
+    charges_sheet = get_sheet(boutique_id, 'charges')
+    if charges_sheet:
+        for row in charges_sheet.get_all_values()[1:]:
+            if len(row) > 9 and row[7] == 'VALIDEE':
+                date_validation = str(row[9]).split(' ')[0]
+                if est_dans_periode(date_validation):
+                    charges_validees += to_float_sur(row[4])
+
+    encaisse = encaisse_ventes + paiements_creances
+    caisseNette = encaisse - charges_validees
     
     # Top produits
     produits_stats = {}
@@ -1502,6 +1541,9 @@ def api_get_statistiques():
     
     return jsonify({
         'chiffreAffaire': chiffreAffaire,
+        'encaisse': encaisse,
+        'charges': charges_validees,
+        'caisseNette': caisseNette,
         'nbVentes': nbVentes,
         'nbProduitsVendus': nbProduitsVendus,
         'ticketMoyen': ticketMoyen,
