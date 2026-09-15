@@ -4,17 +4,20 @@
 
     <h3>Nouvelle charge</h3>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
-        <select id="newCategorie" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+        <select id="newCategorie" onchange="toggleAutrePrecision()" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
             <option value="Loyer">Loyer</option>
             <option value="Électricité">Électricité</option>
             <option value="Eau">Eau</option>
+            <option value="Internet">Internet</option>
             <option value="Transport">Transport</option>
             <option value="Salaire">Salaire</option>
+            <option value="Tontine">Tontine</option>
             <option value="Fournitures">Fournitures</option>
             <option value="Autre">Autre</option>
         </select>
         <input type="number" id="newMontant" placeholder="Montant (FCFA)" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
         <input type="text" id="newMotif" placeholder="Motif / description" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+        <input type="text" id="newAutrePrecision" placeholder="Précisez la catégorie" style="display:none; padding:12px; border:1px solid #ddd; border-radius:8px;">
     </div>
     <button onclick="demanderCharge()" style="width:100%; background:#dc3545; color:white; border:none; border-radius:8px; padding:12px; margin-bottom:30px; cursor:pointer;">Enregistrer la charge</button>
     <p style="text-align:center; color:#666; font-size:13px; margin-top:-20px; margin-bottom:25px;">
@@ -68,10 +71,24 @@
         return div.innerHTML;
     }
 
+    function toggleAutrePrecision() {
+        var autre = document.getElementById('newCategorie').value === 'Autre';
+        document.getElementById('newAutrePrecision').style.display = autre ? 'block' : 'none';
+    }
+
     function demanderCharge() {
         var categorie = document.getElementById('newCategorie').value;
         var montant = parseFloat(document.getElementById('newMontant').value);
         var motif = document.getElementById('newMotif').value;
+
+        if (categorie === 'Autre') {
+            var precision = document.getElementById('newAutrePrecision').value.trim();
+            if (!precision) {
+                alert('Veuillez préciser la catégorie');
+                return;
+            }
+            categorie = precision;
+        }
 
         if (!montant || montant <= 0) {
             alert('Montant invalide');
@@ -90,6 +107,9 @@
                 msgDiv.innerHTML = '<div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.message + '</div>';
                 document.getElementById('newMontant').value = '';
                 document.getElementById('newMotif').value = '';
+                document.getElementById('newAutrePrecision').value = '';
+                document.getElementById('newAutrePrecision').style.display = 'none';
+                document.getElementById('newCategorie').value = 'Loyer';
                 chargerCharges();
             } else {
                 msgDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;">' + data.error + '</div>';
