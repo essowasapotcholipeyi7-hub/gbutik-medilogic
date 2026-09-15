@@ -889,6 +889,13 @@ def api_get_historique_ventes():
             # Prix unitaire depuis le catalogue (colonne E)
             prix_unitaire = prix_catalogue.get(produit_nom, 0)
             
+            total = float(row[7]) if len(row) > 7 and row[7] else 0
+            # Montant réellement encaissé (colonne M) : si vente à crédit
+            # partielle, sinon égal au total (rétro-compatible avec les
+            # ventes enregistrées avant l'ajout des créances).
+            montant_encaisse = to_float_sur(row[12]) if len(row) > 12 and row[12] not in ('', None) else total
+            creance_liee = str(row[13]) if len(row) > 13 else ''
+
             ventes.append({
                 'id': str(row[0]),
                 'date': str(row[1]) if len(row) > 1 else '',
@@ -897,7 +904,9 @@ def api_get_historique_ventes():
                 'quantite': int(float(row[4])) if len(row) > 4 and row[4] else 0,
                 'prix_unitaire': prix_unitaire,  # ← NOUVEAU : prix conseillé du catalogue
                 'prix_vendu': float(row[5]) if len(row) > 5 and row[5] else 0,
-                'total': float(row[7]) if len(row) > 7 and row[7] else 0,
+                'total': total,
+                'montantEncaisse': montant_encaisse,
+                'creance': bool(creance_liee),
                 'vendeur': str(row[8]) if len(row) > 8 else ''
             })
         except Exception as e:
@@ -1100,6 +1109,36 @@ def api_get_creances():
             'vendeur': row[9] if len(row) > 9 else ''
         })
     return jsonify(creances[::-1])
+
+
+@app.route('/api/get_paiements_creances')
+def api_get_paiements_creances():
+    """Liste complète des paiements de créances (toutes dates), pour permettre
+    aux pages comme l'historique des ventes d'appliquer leur propre filtre de
+    période côté client, comme elles le font déjà pour les ventes et les
+    charges."""
+    if 'boutique_id' not in session:
+        return jsonify([])
+
+    boutique_id = session['boutique_id']
+    sheet = get_sheet(boutique_id, 'creances_paiements')
+    if not sheet:
+        return jsonify([])
+
+    data = sheet.get_all_values()
+    paiements = []
+    for i in range(1, len(data)):
+        row = data[i]
+        if len(row) < 7:
+            continue
+        date_validation = row[8] if len(row) > 8 else ''
+        paiements.append({
+            'id': row[0], 'creanceId': row[1], 'date': row[2], 'heure': row[3],
+            'montant': to_float_sur(row[4]), 'demandeur': row[5], 'statut': row[6],
+            'validePar': row[7] if len(row) > 7 else '',
+            'dateValidation': date_validation.split(' ')[0] if date_validation else ''
+        })
+    return jsonify(paiements[::-1])
 
 
 @app.route('/api/enregistrer_paiement_creance', methods=['POST'])
