@@ -896,6 +896,8 @@ def api_get_historique_ventes():
             montant_encaisse = to_float_sur(row[12]) if len(row) > 12 and row[12] not in ('', None) else total
             creance_liee = str(row[13]) if len(row) > 13 else ''
 
+            remise = float(row[6]) if len(row) > 6 and row[6] else 0
+
             ventes.append({
                 'id': str(row[0]),
                 'date': str(row[1]) if len(row) > 1 else '',
@@ -904,9 +906,11 @@ def api_get_historique_ventes():
                 'quantite': int(float(row[4])) if len(row) > 4 and row[4] else 0,
                 'prix_unitaire': prix_unitaire,  # ← NOUVEAU : prix conseillé du catalogue
                 'prix_vendu': float(row[5]) if len(row) > 5 and row[5] else 0,
+                'remise': remise,
                 'total': total,
                 'montantEncaisse': montant_encaisse,
                 'creance': bool(creance_liee),
+                'creanceId': creance_liee,
                 'vendeur': str(row[8]) if len(row) > 8 else ''
             })
         except Exception as e:

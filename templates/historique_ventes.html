@@ -53,11 +53,11 @@
         <table id="historiqueTable">
             <thead>
                 <tr>
-                    <th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total</th><th>Encaissé</th><th>Vendeur</th>
+                    <th>Date</th><th>Heure</th><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Prix vendu</th><th>Total</th><th>Encaissé</th><th>Vendeur</th><th>Action</th>
                 </tr>
             </thead>
             <tbody id="historiqueBody">
-                <tr><td colspan="9">Chargement...<\/td><\/tr>
+                <tr><td colspan="10">Chargement...<\/td><\/tr>
             </tbody>
         </table>
     </div>
@@ -85,6 +85,7 @@
     .stat-card-charges { background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); }
     .stat-card-nette { background: linear-gradient(135deg, #92400e 0%, #d97706 100%); }
     label { font-weight: bold; color: #555; font-size: 12px; }
+    .btn-reimprimer { background:#6f42c1; color:white; border:none; border-radius:5px; padding:6px 10px; cursor:pointer; font-size:12px; white-space:nowrap; }
     @media print {
         .card { box-shadow: none; margin: 0; padding: 10px; }
         .stats, button, .btn-print, .btn-csv, .btn-pdf { display: none; }
@@ -98,9 +99,11 @@
 </style>
 
 <script>
+    const boutiqueNom = "{{ session.boutique_nom if session.boutique_nom else 'Ma boutique' }}";
     let toutesVentes = [];
     let toutesCharges = [];
     let tousPaiements = [];
+    let toutesCreances = [];
     let ventesFiltrees = [];
     let chargesFiltrees = [];
     let paiementsFiltres = [];
@@ -124,17 +127,19 @@
         Promise.all([
             fetch('/api/get_historique_ventes').then(r => r.json()),
             fetch('/api/get_charges').then(r => r.json()),
-            fetch('/api/get_paiements_creances').then(r => r.json())
+            fetch('/api/get_paiements_creances').then(r => r.json()),
+            fetch('/api/get_creances').then(r => r.json())
         ])
-            .then(([ventes, charges, paiements]) => {
+            .then(([ventes, charges, paiements, creances]) => {
                 toutesVentes = ventes;
                 toutesCharges = charges;
                 tousPaiements = paiements;
+                toutesCreances = creances;
                 appliquerFiltres();
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                document.getElementById('historiqueBody').innerHTML = '<tr><td colspan="9">Erreur de chargement<\/td><\/tr>';
+                document.getElementById('historiqueBody').innerHTML = '<tr><td colspan="10">Erreur de chargement<\/td><\/tr>';
             });
     }
 
@@ -202,7 +207,7 @@
         tbody.innerHTML = '';
 
         if (!ventesFiltrees || ventesFiltrees.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Aucune vente pour cette période<\/td><\/tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Aucune vente pour cette période<\/td><\/tr>';
         } else {
             ventesFiltrees.forEach(function(v) {
                 totalCA += v.total || 0;
@@ -223,6 +228,11 @@
                 celluleEncaisse.textContent = montantEncaisse.toLocaleString('fr-FR') + ' FCFA';
                 if (v.creance) celluleEncaisse.innerHTML += ' <span style="color:#dc3545; font-size:11px;">(créance)</span>';
                 row.insertCell(8).textContent = v.vendeur || '';
+                var btnReimprimer = document.createElement('button');
+                btnReimprimer.className = 'btn-reimprimer';
+                btnReimprimer.textContent = 'Réimprimer';
+                btnReimprimer.onclick = function() { reimprimerRecu(v); };
+                row.insertCell(9).appendChild(btnReimprimer);
             });
         }
 
@@ -239,6 +249,96 @@
         document.getElementById('totalCaisseNette').innerHTML = caisseNette.toLocaleString('fr-FR') + ' FCFA';
     }
     
+    // Retrouve l'horodatage partagé par toutes les lignes d'un même panier :
+    // VENTE_{timestamp}_{produit} (vente unique) ou VENTE_{timestamp}_{idx}_
+    // {produit} (article de panier) - dans les deux cas le premier groupe de
+    // chiffres après "VENTE_" identifie la transaction d'origine.
+    function extraireTimestamp(venteId) {
+        var m = /^VENTE_(\d+)_/.exec(venteId || '');
+        return m ? m[1] : null;
+    }
+
+    function reimprimerRecu(vente) {
+        var ts = extraireTimestamp(vente.id);
+        var groupe = toutesVentes.filter(function(v) {
+            return extraireTimestamp(v.id) === ts && v.date === vente.date && v.vendeur === vente.vendeur;
+        });
+        if (groupe.length === 0) groupe = [vente];
+
+        var totalBrut = groupe.reduce(function(s, v) { return s + (v.quantite * v.prix_vendu); }, 0);
+        var remise = groupe.reduce(function(s, v) { return s + (v.remise || 0); }, 0);
+        var total = groupe.reduce(function(s, v) { return s + (v.total || 0); }, 0);
+        var montantPaye = groupe.reduce(function(s, v) { return s + ((v.montantEncaisse !== undefined) ? v.montantEncaisse : v.total); }, 0);
+        var resteAPayer = total - montantPaye;
+
+        var clientNom = '';
+        var itemAvecCreance = groupe.find(function(v) { return v.creanceId; });
+        if (itemAvecCreance) {
+            var creance = toutesCreances.find(function(c) { return c.id === itemAvecCreance.creanceId; });
+            if (creance) clientNom = creance.clientNom;
+        }
+
+        var articlesHtml = groupe.map(function(v) {
+            return '<tr>' +
+                '<td style="padding:6px 8px; border-bottom:1px solid #eee;">' + (v.produit || '') + '</td>' +
+                '<td style="padding:6px 8px; border-bottom:1px solid #eee; text-align:center;">' + v.quantite + '</td>' +
+                '<td style="padding:6px 8px; border-bottom:1px solid #eee; text-align:right;">' + v.prix_vendu.toLocaleString('fr-FR') + ' FCFA</td>' +
+                '<td style="padding:6px 8px; border-bottom:1px solid #eee; text-align:right;">' + v.total.toLocaleString('fr-FR') + ' FCFA</td>' +
+                '</tr>';
+        }).join('');
+
+        var creanceHtml = '';
+        if (resteAPayer > 0.01) {
+            creanceHtml = '<table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:10px;">' +
+                '<tr><td>Montant payé</td><td style="text-align:right;">' + montantPaye.toLocaleString('fr-FR') + ' FCFA</td></tr>' +
+                '<tr style="color:#dc3545;"><td><strong>Reste à payer (créance)</strong></td><td style="text-align:right;">' + resteAPayer.toLocaleString('fr-FR') + ' FCFA</td></tr>' +
+                '<tr><td>Client</td><td style="text-align:right;">' + (clientNom || '-') + '</td></tr>' +
+                '</table>';
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu - ' + boutiqueNom + '</title>' +
+            '<style>' +
+            'body { font-family:\'Segoe UI\', Arial, sans-serif; padding:0; margin:0; display:flex; justify-content:center; }' +
+            '.recu { width:350px; max-width:100%; }' +
+            '.recu-header { background:#1e3a8a; color:white; padding:20px; text-align:center; }' +
+            '.recu-header h2 { margin:0 0 10px 0; font-size:18px; }' +
+            '.recu-header p { margin:5px 0; font-size:12px; opacity:0.9; }' +
+            '.recu-body { padding:20px; }' +
+            'table { width:100%; border-collapse:collapse; font-size:13px; }' +
+            'th { background:#f0f0f0; padding:8px; text-align:left; border-bottom:1px solid #ddd; }' +
+            '.recu-total td { padding-top:10px; }' +
+            '.recu-grand-total td { padding-top:10px; border-top:2px solid #1e3a8a; font-size:16px; font-weight:bold; }' +
+            '.recu-footer { background:#f8f9fa; padding:15px; text-align:center; font-size:11px; color:#666; }' +
+            '.reimpression { background:#fff3cd; color:#856404; text-align:center; padding:6px; font-size:11px; font-weight:bold; }' +
+            '</style></head><body>' +
+            '<div class="recu">' +
+            '<div class="reimpression">RÉIMPRESSION DE REÇU</div>' +
+            '<div class="recu-header">' +
+            '<h2>' + boutiqueNom + '</h2>' +
+            '<p>Date : ' + vente.date + '</p>' +
+            '<p>Heure : ' + vente.heure + '</p>' +
+            '<p>Vendeur : ' + (vente.vendeur || '-') + '</p>' +
+            '</div>' +
+            '<div class="recu-body">' +
+            '<table><thead><tr><th>Article</th><th>Qté</th><th>Prix</th><th>Total</th></tr></thead>' +
+            '<tbody>' + articlesHtml + '</tbody>' +
+            '<tfoot>' +
+            '<tr class="recu-total"><td colspan="3">Total brut</td><td style="text-align:right;">' + totalBrut.toLocaleString('fr-FR') + ' FCFA</td></tr>' +
+            '<tr class="recu-total"><td colspan="3">Remise</td><td style="text-align:right;">' + remise.toLocaleString('fr-FR') + ' FCFA</td></tr>' +
+            '<tr class="recu-grand-total"><td colspan="3">TOTAL À PAYER</td><td style="text-align:right;">' + total.toLocaleString('fr-FR') + ' FCFA</td></tr>' +
+            '</tfoot></table>' +
+            creanceHtml +
+            '</div>' +
+            '<div class="recu-footer"><p>Merci de votre visite !</p></div>' +
+            '</div>' +
+            '<script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 1000); };<' + '/script>' +
+            '</body></html>';
+
+        var w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+    }
+
     function rechercher() {
         appliquerFiltres();
     }
@@ -325,7 +425,7 @@
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Historique des ventes - GBoutik-MediLogic</title>
+            <title>Historique des ventes - ${boutiqueNom}</title>
             <style>
                 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
                 h1 { color: #1e3a8a; text-align: center; }
@@ -342,7 +442,7 @@
             </style>
         </head>
         <body>
-            <h1>GBoutik-MediLogic</h1>
+            <h1>${boutiqueNom}</h1>
             <div class="header">
                 <h2>Historique des ventes</h2>
                 <p>Généré le ${today}</p>
