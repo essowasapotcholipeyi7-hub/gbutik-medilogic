@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
@@ -328,6 +328,15 @@ def inscription():
 @app.route('/login_page')
 def login_page():
     return render_template('login_page.html')
+
+# ========== PWA : INSTALLATION "MA BOUTIK" ==========
+@app.route('/app-manifest.json')
+def app_manifest():
+    return send_from_directory('static', 'app-manifest.json', mimetype='application/manifest+json')
+
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
 
 @app.route('/dashboard_boutique')
 def dashboard_boutique():

@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GBoutik-MediLogic — Espace Vendeur</title>
+  <!-- PWA : installation "Ma Boutik" sur tablette/PC/téléphone -->
+  <link rel="manifest" href="{{ url_for('app_manifest') }}">
+  <meta name="theme-color" content="#0b1d35">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ma Boutik">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
   <style>
     * {
@@ -338,6 +347,13 @@
       document.getElementById('btnAjouterAppareil').disabled = true;
     }
     chargerAppareils();
+
+    // PWA : installation "Ma Boutik"
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register("{{ url_for('service_worker') }}").catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>
