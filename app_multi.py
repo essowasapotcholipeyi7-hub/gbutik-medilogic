@@ -12,6 +12,7 @@ import traceback
 import threading
 import random
 import webauthn_service
+import livraplus_synchro
 
 # ========== CONFIGURATION EMAIL ==========
 EMAIL_EXPEDITEUR = os.environ.get('EMAIL_EXPEDITEUR', '')
@@ -545,6 +546,9 @@ def api_ajouter_produit():
             ''
         ]
         stock_sheet.append_row(row_stock)
+        livraplus_synchro.signaler(boutique_id, 'nouveau', data.get('nom'), stock=data.get('stock') or 0,
+                                   prix_vente=data.get('prixVente'), prix_achat=data.get('prixAchat'),
+                                   categorie=data.get('categorie'), par=session.get('user_nom'))
     
     # 3. ENREGISTRER DANS LE JOURNAL
     journal_sheet = get_sheet(boutique_id, 'journal')
@@ -660,6 +664,7 @@ def api_valider_vente():
                 if len(stock_data[i]) > 1 and stock_data[i][1] == produit_nom:
                     stock_sheet.update_cell(i+1, 3, nouveau_stock)
                     print(f"Stock {produit_nom}: {ancien_stock} → {nouveau_stock}")
+                    livraplus_synchro.signaler(boutique_id, 'vente', produit_nom, -quantite, par=session.get('user_nom'))
                     break
         
         # Journal
@@ -794,6 +799,7 @@ def api_valider_panier():
                     if len(stock_data[i]) > 1 and stock_data[i][1] == item['produit']:
                         stock_sheet.update_cell(i+1, 3, nouveau_stock)
                         print(f"Stock {item['produit']}: {ancien_stock} → {nouveau_stock}")
+                        livraplus_synchro.signaler(boutique_id, 'vente', item['produit'], -int(item['quantite']), par=session.get('user_nom'))
                         break
             
             # Journal
@@ -1391,6 +1397,8 @@ def api_approvisionner():
             nouveau_stock = ancien_stock + data.get('quantite')
             stock_sheet.update_cell(i+1, 3, nouveau_stock)
             produit_trouve = True
+            livraplus_synchro.signaler(boutique_id, 'approvisionnement', data.get('produit'), int(data.get('quantite') or 0),
+                                       par=session.get('user_nom'))
             break
     
     if not produit_trouve:
@@ -1619,6 +1627,8 @@ def api_annuler_vente():
                 ancien_stock = int(stock_data[i][2]) if len(stock_data[i]) > 2 else 0
                 nouveau_stock = ancien_stock + data.get('quantite')
                 stock_sheet.update_cell(i+1, 3, nouveau_stock)
+                livraplus_synchro.signaler(boutique_id, 'annulation', data.get('produit'), int(data.get('quantite') or 0),
+                                           par=session.get('user_nom'))
                 break
     
     journal_sheet = get_sheet(boutique_id, 'journal')
@@ -2256,6 +2266,8 @@ def api_traiter_correction_vente():
                         ancien_stock = int(stock_data[i][2]) if len(stock_data[i]) > 2 else 0
                         nouveau_stock = ancien_stock + data.get('quantite')
                         stock_sheet.update_cell(i+1, 3, nouveau_stock)
+                        livraplus_synchro.signaler(boutique_id, 'annulation', data.get('produit'), int(data.get('quantite') or 0),
+                                                   par=session.get('user_nom'))
                         break
             
             # Journal
@@ -2338,6 +2350,8 @@ def api_traiter_correction_vente():
                         ancien_stock = int(stock_data[i][2]) if len(stock_data[i]) > 2 else 0
                         nouveau_stock = ancien_stock - diff_quantite  # Si + de quantité, - de stock
                         stock_sheet.update_cell(i+1, 3, nouveau_stock)
+                        livraplus_synchro.signaler(boutique_id, 'correction', data.get('produit'), -int(diff_quantite or 0),
+                                                   par=session.get('user_nom'))
                         break
             
             # Journal
@@ -2602,6 +2616,15 @@ def api_modifier_produit():
             stock_data = stock_sheet.get_all_values()
             for i in range(1, len(stock_data)):
                 if len(stock_data[i]) > 0 and stock_data[i][0] == produit_id:
+                    try:
+                        ancien_nom = stock_data[i][1] if len(stock_data[i]) > 1 else ''
+                        ancien_stock_p = int(stock_data[i][2]) if len(stock_data[i]) > 2 and stock_data[i][2] else 0
+                        livraplus_synchro.signaler(boutique_id, 'inventaire', data.get('nom'),
+                                                   int(data.get('stock', 0) or 0) - ancien_stock_p,
+                                                   ancien_nom=ancien_nom if ancien_nom != data.get('nom') else None,
+                                                   par=session.get('user_nom'))
+                    except (TypeError, ValueError):
+                        pass
                     stock_sheet.update_cell(i+1, 2, data.get('nom'))
                     stock_sheet.update_cell(i+1, 3, data.get('stock', 0))
                     stock_sheet.update_cell(i+1, 4, data.get('seuil', 10))
