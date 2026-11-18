@@ -72,7 +72,9 @@ def _envoyer(url, cle, evenements):
     for essai in range(5):
         try:
             requete = urllib.request.Request(url, data=donnees, method='POST', headers={
-                'Content-Type': 'application/json', 'Authorization': f'Bearer {cle}'})
+                'Content-Type': 'application/json', 'Authorization': f'Bearer {cle}',
+                # Sans nom d'application, la protection Cloudflare de LivraPlus refuse l'envoi (erreur 1010)
+                'User-Agent': 'MaBoutik-LivraPlus/1.0'})
             # 1er essai long : LivraPlus peut être en train de se réveiller (hébergement gratuit)
             with urllib.request.urlopen(requete, timeout=60 if essai == 0 else 20) as r:
                 if r.status == 200:
