@@ -33,6 +33,7 @@ else:
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 spreadsheet = client.open_by_key(SPREADSHEET_ID)
+livraplus_synchro.brancher(spreadsheet)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
